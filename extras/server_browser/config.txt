@@ -1,0 +1,15 @@
+# server browser - derpy54320
+
+[PREFERENCES]
+open_key F1				# key to open the browser (directinput keyboard name OR virtual key name)
+abc_order true			# show in alphabetical order instead of preserving the order of list_servers
+also_discon true		# open_key is also used to disconnect from servers if currently connected to one
+suppress_hint false		# don't show a hint for adding servers if no servers (besides localhost:17017) are found
+
+[ORDERING]
+custom_order localhost:17017		# every custom_order gets placed above all other servers (add as many custom_order lines as you want)
+
+[CONFIG]
+require_version 7
+allow_on_server true
+main_script browser.lua

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>DSL7 Reference</title>
+		<style>
+			:root{
+				color-scheme: dark;
+				font-family: Helvetica, Arial;
+			}
+			#container{
+				background-color: #181818;
+				border-color: #000000;
+				border-radius: 1rem;
+				border-style: solid;
+				border-width: 1px;
+				margin-left: auto;
+				margin-right: auto;
+				max-width: 60rem;
+				padding: 1rem;
+				padding-top: 1px;
+			}
+			.section{
+				margin-left: 16px;
+			}
+			a.function{
+				color: inherit;
+				text-decoration: inherit;
+			}
+			a.function:hover{
+				text-decoration: underline;
+			}
+			h1,h2{
+				color: #C8C878;
+				font-family: Arial;
+				font-weight: 900;
+			}
+			p{
+				margin-top: 0px;
+				margin-bottom: 8px;
+			}
+			span{
+				background-color: #C0C0C0;
+				border-radius: 8px;
+				color: #FFFFFF;
+				font-family: Verdana;
+				font-size: 90%;
+				font-weight: 900;
+				padding: 2px;
+				padding-left: 4px;
+				padding-right: 4px;
+				user-select: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container">
+			<h1>derpy's script loader 7</h1>
+			<div class="section">
+				<p>This is a light version of the full documentation available on <a href="http://bullyscripting.net">bullyscripting.net</a>.</p>
+				<p>It only lists Lua functions created by DSL and provides links to their full documentation pages.</p>
+				<p>Functions that are from Lua's standard library, replace Lua's standard library, or are DSL dev functions are not included here.</p>
+			</div>
+			<div class="functions">
+				<h2>client</h2>
+				<div class="section">
+					<p><span>DSL5</span> <a>ConnectToServer</a></p>
+					<p><span>DSL5</span> <a>DisconnectFromServer</a></p>
+					<p><span>DSL5</span> <a>GetServerList</a></p>
+					<p><span>DSL5</span> <a>IsNetworkingAllowed</a></p>
+					<p><span>DSL5</span> <a>RequestServerListing</a></p>
+					<p><span>DSL5</span> <a>SendNetworkEvent</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>command</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>SetCommand</a></p>
+					<p><span>DSL1</span> <a>ClearCommand</a></p>
+					<p><span>DSL1</span> <a>DoesCommandExist</a></p>
+					<p><span>DSL4</span> <a>RunCommand</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>config</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>LoadConfigFile</a></p>
+					<p><span>DSL1</span> <a>IsConfigMissing</a></p>
+					<p><span>DSL1</span> <a>GetConfigValue</a></p>
+					<p><span>DSL1</span> <a>GetConfigNumber</a></p>
+					<p><span>DSL1</span> <a>GetConfigBoolean</a></p>
+					<p><span>DSL1</span> <a>GetConfigStrings</a></p>
+					<p><span>DSL1</span> <a>AllConfigValues</a></p>
+					<p><span>DSL1</span> <a>AllConfigStrings</a></p>
+					<p><span>DSL5</span> <a>GetScriptConfig</a></p>
+					<p><span>DSL5</span> <a>GetConfigString</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>console</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>IsConsoleActive</a></p>
+					<p><span>DSL1</span> <a>PrintOutput</a></p>
+					<p><span>DSL1</span> <a>print</a></p>
+					<p><span>DSL1</span> <a>PrintWarning</a></p>
+					<p><span>DSL1</span> <a>PrintError</a></p>
+					<p><span>DSL5</span> <a>PrintSpecial</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>content</h2>
+				<div class="section">
+					<p><span>DSL5</span> <a>RegisterGameFile</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>event</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>AddScriptLoaderCallback</a></p>
+					<p><span>DSL4</span> <a>RegisterLocalEventHandler</a></p>
+					<p><span>DSL4</span> <a>RemoveEventHandler</a></p>
+					<p><span>DSL4</span> <a>RunLocalEvent</a></p>
+					<p><span>DSL5</span> <a>RegisterNetworkEventHandler</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>file</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>GetScriptFilePath</a></p>
+					<p><span>DSL1</span> <a>IsSystemAccessAllowed</a></p>
+					<p><span>DSL3</span> <a>GetPackageFilePath</a></p>
+					<p><span>DSL4</span> <a>OpenFile</a></p>
+					<p><span>DSL4</span> <a>CloseFile</a></p>
+					<p><span>DSL4</span> <a>FlushFile</a></p>
+					<p><span>DSL4</span> <a>SeekFile</a></p>
+					<p><span>DSL4</span> <a>ReadFile</a></p>
+					<p><span>DSL4</span> <a>WriteFile</a></p>
+					<p><span>DSL4</span> <a>SaveTable</a></p>
+					<p><span>DSL4</span> <a>LoadTable</a></p>
+					<p><span>DSL7</span> <a>CanWriteFiles</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>hook</h2>
+				<div class="section">
+					<p><span>DSL5</span> <a>GetBaseGameFunction</a></p>
+					<p><span>DSL6</span> <a>HookFunction</a></p>
+					<p><span>DSL6</span> <a>RemoveFunctionHook</a></p>
+					<p><span>DSL6</span> <a>ReplaceFunction</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>input</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>IsKeyPressed</a></p>
+					<p><span>DSL1</span> <a>IsKeyBeingPressed</a></p>
+					<p><span>DSL1</span> <a>IsKeyBeingReleased</a></p>
+					<p><span>DSL1</span> <a>GetAnyKeyPressed</a></p>
+					<p><span>DSL1</span> <a>GetAnyKeyBeingPressed</a></p>
+					<p><span>DSL1</span> <a>StartTyping</a></p>
+					<p><span>DSL1</span> <a>IsTypingActive</a></p>
+					<p><span>DSL1</span> <a>GetTypingString</a></p>
+					<p><span>DSL1</span> <a>WasTypingAborted</a></p>
+					<p><span>DSL1</span> <a>StopTyping</a></p>
+					<p><span>DSL1</span> <a>GetMouseInput</a></p>
+					<p><span>DSL4</span> <a>IsKeyValid</a></p>
+					<p><span>DSL4</span> <a>GetAnyKeyBeingReleased</a></p>
+					<p><span>DSL5</span> <a>SetButtonPressed</a></p>
+					<p><span>DSL5</span> <a>SetStickValue</a></p>
+					<p><span>DSL5</span> <a>GetInputHardware</a></p>
+					<p><span>DSL5</span> <a>IsUsingJoystick</a></p>
+					<p><span>DSL5</span> <a>GetMouseScroll</a></p>
+					<p><span>DSL5</span> <a>IsMousePressed</a></p>
+					<p><span>DSL5</span> <a>IsMouseBeingPressed</a></p>
+					<p><span>DSL5</span> <a>IsMouseBeingReleased</a></p>
+					<p><span>DSL6</span> <a>ZeroController</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>locale</h2>
+				<div class="section">
+					<p><span>DSL4</span> <a>RegisterLocalizedText</a></p>
+					<p><span>DSL4</span> <a>ReplaceLocalizedText</a></p>
+					<p><span>DSL5</span> <a>GetLocalizedText</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>manager</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>DontAutoStartScript</a></p>
+					<p><span>DSL1</span> <a>RequireLoaderVersion</a></p>
+					<p><span>DSL1</span> <a>RequireSystemAccess</a></p>
+					<p><span>DSL1</span> <a>LoadScript</a></p>
+					<p><span>DSL1</span> <a>StartScript</a></p>
+					<p><span>DSL1</span> <a>StartVirtualScript</a></p>
+					<p><span>DSL1</span> <a>TerminateCurrentScript</a></p>
+					<p><span>DSL1</span> <a>TerminateScript</a></p>
+					<p><span>DSL1</span> <a>GetScriptEnvironment</a></p>
+					<p><span>DSL1</span> <a>GetScriptSharedTable</a></p>
+					<p><span>DSL1</span> <a>IsScriptRunning</a></p>
+					<p><span>DSL1</span> <a>CreateThread</a></p>
+					<p><span>DSL1</span> <a>CreateSystemThread</a></p>
+					<p><span>DSL1</span> <a>CreateDrawingThread</a></p>
+					<p><span>DSL1</span> <a>TerminateCurrentThread</a></p>
+					<p><span>DSL1</span> <a>TerminateThread</a></p>
+					<p><span>DSL1</span> <a>IsThreadRunning</a></p>
+					<p><span>DSL1</span> <a>GetThreadWait</a></p>
+					<p><span>DSL1</span> <a>Wait</a></p>
+					<p><span>DSL1</span> <a>UseBaseGameScriptFunctions</a></p>
+					<p><span>DSL4</span> <a>RequireDependency</a></p>
+					<p><span>DSL4</span> <a>GetScriptCollection</a></p>
+					<p><span>DSL4</span> <a>GetScriptName</a></p>
+					<p><span>DSL4</span> <a>IsScriptZipped</a></p>
+					<p><span>DSL4</span> <a>CreateAdvancedThread</a></p>
+					<p><span>DSL4</span> <a>GetThreadName</a></p>
+					<p><span>DSL4</span> <a>ImportScript</a></p>
+					<p><span>DSL6</span> <a>SetScriptCleanup</a></p>
+					<p><span>DSL7</span> <a>AllowOnServer</a></p>
+					<p><span>DSL7</span> <a>StopCurrentScriptCollection</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>miscellaneous</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>GetFrameTime</a></p>
+					<p><span>DSL1</span> <a>GetPlayerName</a></p>
+					<p><span>DSL1</span> <a>CallFunctionFromScript</a></p>
+					<p><span>DSL3</span> <a>IsGamePaused</a></p>
+					<p><span>DSL4</span> <a>GetPersistentDataTable</a></p>
+					<p><span>DSL4</span> <a>GetSystemTimer</a></p>
+					<p><span>DSL4</span> <a>IsDslScriptRunning</a></p>
+					<p><span>DSL4</span> <a>IsActionNodeValid</a></p>
+					<p><span>DSL4</span> <a>UseProxyScriptForFunction</a></p>
+					<p><span>DSL5</span> <a>GetTimer</a></p>
+					<p><span>DSL5</span> <a>ForceWindowUpdate</a></p>
+					<p><span>DSL5</span> <a>GetInternalResolution</a></p>
+					<p><span>DSL5</span> <a>GetScreenResolution</a></p>
+					<p><span>DSL5</span> <a>QuitGame</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>ped</h2>
+				<div class="section">
+					<p><span>DSL5</span> <a>AllPeds</a></p>
+					<p><span>DSL5</span> <a>PedGetModelId</a></p>
+					<p><span>DSL5</span> <a>PedSetPosSimple</a></p>
+					<p><span>DSL5</span> <a>PedSpoofModel</a></p>
+					<p><span>DSL6</span> <a>PedCreateScriptless</a></p>
+					<p><span>DSL7</span> <a>PedGetThrottle</a></p>
+					<p><span>DSL7</span> <a>PedSetThrottle</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>pool</h2>
+				<div class="section">
+					<p><span>DSL6</span> <a>GetPoolSize</a></p>
+					<p><span>DSL6</span> <a>GetPoolUsage</a></p>
+					<p><span>DSL6</span> <a>GetPoolSpace</a></p>
+					<p><span>DSL6</span> <a>GetAllPoolInfo</a></p>
+					<p><span>DSL6</span> <a>RequirePoolSize</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>render</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>GetDisplayResolution</a></p>
+					<p><span>DSL1</span> <a>GetDisplayAspectRatio</a></p>
+					<p><span>DSL1</span> <a>DrawRectangle</a></p>
+					<p><span>DSL1</span> <a>CreateTexture</a></p>
+					<p><span>DSL1</span> <a>DrawTexture</a></p>
+					<p><span>DSL1</span> <a>SetTextureBounds</a></p>
+					<p><span>DSL1</span> <a>GetTextureResolution</a></p>
+					<p><span>DSL1</span> <a>GetTextureAspectRatio</a></p>
+					<p><span>DSL1</span> <a>GetTextureDisplayAspectRatio</a></p>
+					<p><span>DSL1</span> <a>CreateFont</a></p>
+					<p><span>DSL1</span> <a>DrawText</a></p>
+					<p><span>DSL1</span> <a>MeasureText</a></p>
+					<p><span>DSL1</span> <a>DiscardText</a></p>
+					<p><span>DSL1</span> <a>SetTextPosition</a></p>
+					<p><span>DSL1</span> <a>SetTextHeight</a></p>
+					<p><span>DSL1</span> <a>SetTextScale</a></p>
+					<p><span>DSL1</span> <a>SetTextFont</a></p>
+					<p><span>DSL1</span> <a>SetTextAlign</a></p>
+					<p><span>DSL1</span> <a>SetTextColor</a></p>
+					<p><span>DSL1</span> <a>SetTextColour</a></p>
+					<p><span>DSL1</span> <a>SetTextShadow</a></p>
+					<p><span>DSL1</span> <a>SetTextOutline</a></p>
+					<p><span>DSL1</span> <a>SetTextWrapping</a></p>
+					<p><span>DSL1</span> <a>SetTextRedrawing</a></p>
+					<p><span>DSL1</span> <a>GetTextFormatting</a></p>
+					<p><span>DSL1</span> <a>SetTextFormatting</a></p>
+					<p><span>DSL2</span> <a>SetTextBold</a></p>
+					<p><span>DSL2</span> <a>SetTextItalic</a></p>
+					<p><span>DSL2</span> <a>SetTextClipping</a></p>
+					<p><span>DSL2</span> <a>PopTextFormatting</a></p>
+					<p><span>DSL3</span> <a>DrawTexture2</a></p>
+					<p><span>DSL3</span> <a>DrawTextInline</a></p>
+					<p><span>DSL4</span> <a>MeasureTextInline</a></p>
+					<p><span>DSL4</span> <a>ClearDisplay</a></p>
+					<p><span>DSL4</span> <a>CreateRenderTarget</a></p>
+					<p><span>DSL4</span> <a>DrawBackBufferOntoTarget</a></p>
+					<p><span>DSL4</span> <a>SetRendererAlphaBlending</a></p>
+					<p><span>DSL5</span> <a>SetDrawLayer</a></p>
+					<p><span>DSL5</span> <a>SetTextBlack</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>savedata</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>GetSaveDataTable</a></p>
+					<p><span>DSL1</span> <a>GetRawSaveDataTable</a></p>
+					<p><span>DSL4</span> <a>IsSaveDataReady</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>serialize</h2>
+				<div class="section">
+					<p><span>DSL1</span> <a>PackData</a></p>
+					<p><span>DSL1</span> <a>UnpackData</a></p>
+					<p><span>DSL4</span> <a>PackTable</a></p>
+					<p><span>DSL4</span> <a>UnpackTable</a></p>
+				</div>
+			</div>
+			<div class="functions">
+				<h2>server</h2>
+				<div class="section">
+					<p><span>DSL5</span> <a>AllPlayers</a></p>
+					<p><span>DSL5</span> <a>GetPlayerIp</a></p>
+					<p><span>DSL5</span> <a>GetPlayerName</a></p>
+					<p><span>DSL5</span> <a>GetServerHz</a></p>
+					<p><span>DSL5</span> <a>IsPlayerValid</a></p>
+					<p><span>DSL5</span> <a>KickPlayer</a></p>
+					<p><span>DSL5</span> <a>SendNetworkEvent</a></p>
+				</div>
+			</div>
+		</div>
+		<script>
+			(function(){
+				var tags = document.getElementsByTagName("span");
+				var count = tags.length;
+				while(count){
+					var tag = tags[--count];
+					var version = tag.innerHTML;
+					if(version === "DSL1")
+						tag.style.backgroundColor = "#808080";
+					else if(version === "DSL2")
+						tag.style.backgroundColor = "#80D020";
+					else if(version === "DSL3")
+						tag.style.backgroundColor = "#2080FF";
+					else if(version === "DSL4")
+						tag.style.backgroundColor = "#FF40C0";
+					else if(version === "DSL5")
+						tag.style.backgroundColor = "#FF0000";
+					else if(version === "DSL6")
+						tag.style.backgroundColor = "#8020FF";
+					else if(version === "DSL7")
+						tag.style.backgroundColor = "#00C0FF";
+				}
+			})();
+			(function(){
+				var sections = document.getElementsByClassName("functions");
+				var scount = sections.length;
+				while(scount){
+					var page = "http://bullyscripting.net/dsl/library/" + sections[--scount].children[0].innerHTML + ".html?";
+					var links = sections[scount].getElementsByTagName("a");
+					var lcount = links.length;
+					while(lcount){
+						var link = links[--lcount];
+						if(link.href === ""){
+							link.href = page + link.innerHTML;
+							link.className = "function";
+						}
+					}
+				}
+			})();
+		</script>
+	</body>
+</html>
