@@ -213,6 +213,6 @@ int main(int argc,char **argv){
 			updateNetworking2(dsl,dsl->network);
 		}
 	closeDsl(dsl);
-	printf("server shutdown\n");
+	printf("shutdown server\n");
 	return 0;
 }
