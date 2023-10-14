@@ -8,6 +8,7 @@
 /* COMMANDS */
 
 // BASIC
+#define TEXT_HELP_QUIT "Usage: quit\nSafely terminate the server as soon as possible."
 #define TEXT_HELP_HELP "Usage: help [command]\nLists all commands, or get help with a specific command."
 #define TEXT_HELP_CLEAR "Usage: clear\nClears the console."
 

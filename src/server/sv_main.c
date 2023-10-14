@@ -9,6 +9,7 @@
 #include <string.h>
 #ifndef _WIN32
 #include <time.h>
+#include <signal.h>
 #include <pthread.h>
 #endif
 
@@ -21,6 +22,9 @@ void updateDslAfterScripts(dsl_state*);
 
 // GLOBAL STATE
 dsl_state *g_dsl = NULL;
+
+// SERVER RUNNING
+static g_running = 1;
 
 // INPUT (WINDOWS)
 #ifdef _WIN32
@@ -72,6 +76,23 @@ struct console_input{
 	int unsupported_for_now;
 };
 #endif
+
+// TERMINATE
+#ifndef _WIN32
+static void handleSigterm(int sig){
+	g_running = 0;
+}
+static int setupSignals(){
+	struct sigaction sa;
+	
+	memset(&sa,0,sizeof(struct sigaction));
+	sa.sa_handler = &handleSigterm;
+	return sigaction(SIGTERM,&sa,NULL);
+}
+#endif
+static void quitCommand(void *arg,int argc,char **argv){
+	g_running = 0;
+}
 
 // TIMING
 struct server_timer{
@@ -160,6 +181,11 @@ int main(int argc,char **argv){
 	
 	#ifdef _WIN32
 	setupTitle();
+	#else
+	if(setupSignals()){
+		printf("failed to setup signal handlers\n");
+		return 1;
+	}
 	#endif
 	dsl = openDsl(NULL,NULL,NULL);
 	if(!dsl){
@@ -169,10 +195,11 @@ int main(int argc,char **argv){
 		#endif
 		return 1;
 	}
+	setScriptCommandEx(dsl->cmdlist,"quit",TEXT_HELP_QUIT,&quitCommand,NULL,1);
 	g_dsl = dsl;
 	memset(&ci,0,sizeof(struct console_input));
 	startServerTimer(&st,dsl);
-	for(;;)
+	while(g_running)
 		if(updateServerTimer(&st,dsl)){
 			#ifdef _WIN32
 			if(updateInput(&ci)){
@@ -185,5 +212,7 @@ int main(int argc,char **argv){
 			updateDslAfterScripts(dsl);
 			updateNetworking2(dsl,dsl->network);
 		}
+	closeDsl(dsl);
+	printf("server shutdown\n");
 	return 0;
 }
