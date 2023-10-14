@@ -49,7 +49,27 @@ static int dsl_shared_index(lua_State *lua){
 	return 0;
 }
 static int dsl_shared_newindex(lua_State *lua){
-	luaL_error(lua,"attempt to set value in `s'");
+	luaL_error(lua,"attempt to set value in `dsl'");
+	return 0;
+}
+static int net_shared_index(lua_State *lua){
+	script_collection *c;
+	const char *str;
+	
+	if(str = lua_tostring(lua,2))
+		for(c = getDslState(lua,1)->manager->collections;c;c = c->next)
+			if(c->net != LUA_NOREF && !dslstrcmp(str,getScriptCollectionName(c))){
+				if(c->flags & SHUTDOWN_COLLECTION)
+					return 0;
+				lua_rawgeti(lua,LUA_REGISTRYINDEX,c->net);
+				if(lua_istable(lua,-1))
+					return 1;
+				lua_pop(lua,1);
+			}
+	return 0;
+}
+static int net_shared_newindex(lua_State *lua){
+	luaL_error(lua,"attempt to set value in `net'");
 	return 0;
 }
 
@@ -330,6 +350,27 @@ static int dsl_GetScriptSharedTable(lua_State *lua){
 		luaL_error(lua,"attempt to change share mode");
 	return 1;
 }
+static int dsl_GetScriptNetworkTable(lua_State *lua){
+	loader_collection *lc;
+	script_collection *c;
+	
+	c = getActiveManager(lua,1)->running_collection;
+	if(c->net == LUA_NOREF){
+		#ifndef DSL_SERVER_VERSION
+		lc = c->lc;
+		if(!lc || ~lc->flags & LOADER_NETWORK)
+			luaL_error(lua,"not a network script");
+		#endif
+		lua_newtable(lua);
+		lua_pushvalue(lua,-1);
+		c->net = luaL_ref(lua,LUA_REGISTRYINDEX);
+		return 1;
+	}
+	lua_rawgeti(lua,LUA_REGISTRYINDEX,c->net);
+	if(!lua_istable(lua,-1))
+		luaL_error(lua,"corrupted network table");
+	return 1;
+}
 static int dsl_IsScriptRunning(lua_State *lua){
 	script *s;
 	
@@ -543,7 +584,7 @@ int dslopen_manager(lua_State *lua){
 	#ifndef DSL_SERVER_VERSION
 	addScriptEventCallback(getDslState(lua,1)->events,EVENT_SCRIPT_CREATED,(script_event_cb)&createdScript,NULL);
 	#endif
-	// COLLECTIONS - EXPORTS
+	// COLLECTIONS - GLOBAL SHARED
 	lua_pushstring(lua,"dsl");
 	lua_newtable(lua);
 	lua_newtable(lua);
@@ -552,6 +593,18 @@ int dslopen_manager(lua_State *lua){
 	lua_rawset(lua,-3);
 	lua_pushstring(lua,"__newindex");
 	lua_pushcfunction(lua,&dsl_shared_newindex);
+	lua_rawset(lua,-3);
+	lua_setmetatable(lua,-2);
+	lua_settable(lua,LUA_GLOBALSINDEX);
+	// COLLECTIONS - NETWORK SHARED
+	lua_pushstring(lua,"net");
+	lua_newtable(lua);
+	lua_newtable(lua);
+	lua_pushstring(lua,"__index");
+	lua_pushcfunction(lua,&net_shared_index);
+	lua_rawset(lua,-3);
+	lua_pushstring(lua,"__newindex");
+	lua_pushcfunction(lua,&net_shared_newindex);
 	lua_rawset(lua,-3);
 	lua_setmetatable(lua,-2);
 	lua_settable(lua,LUA_GLOBALSINDEX);

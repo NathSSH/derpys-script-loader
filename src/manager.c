@@ -454,6 +454,7 @@ script_collection* createScriptCollection(script_manager *sm,const char *name,co
 	c->scripts = NULL;
 	c->lc = ptr;
 	c->name = malloc(strlen(name) + 1);
+	c->net = LUA_NOREF;
 	c->flags = 0;
 	c->running = 0;
 	c->next = NULL;
@@ -475,6 +476,8 @@ void destroyScriptCollection(script_collection *c,lua_State *lua,int cleanup){
 		destroyScript(destroy,lua,cleanup);
 	if(cleanup){
 		runScriptEvent(c->manager->dsl->events,lua,EVENT_COLLECTION_DESTROYED,c);
+		if(c->net != LUA_NOREF)
+			luaL_unref(lua,LUA_REGISTRYINDEX,c->net);
 		lua_pushlightuserdata(lua,c);
 		lua_pushnil(lua);
 		lua_rawset(lua,LUA_REGISTRYINDEX); // registry[c*] = nil

@@ -112,6 +112,7 @@ struct script_collection{
 	struct script *scripts;
 	loader_collection *lc;
 	char *name;
+	int net; // lua reference to a shared net table
 	int flags;
 	int running;
 	struct script_collection *next;
