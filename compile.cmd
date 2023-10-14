@@ -36,18 +36,12 @@ POPD
 :success
 ECHO success!
 FOR /R %%f IN (*.obj) DO DEL /Q "%%f"
-FOR %%f IN (asm\*.asm) DO DEL /Q %%f
-PUSHD src\client
-FOR %%f IN (*.asm) DO MOVE /Y %%f ..\..\asm\%%f >NUL
-POPD
 GOTO :eof
 :failpop
 POPD
 :failure
 ECHO failure!
 FOR /R %%f IN (*.obj) DO DEL /Q "%%f"
-FOR %%f IN (*.lib) DO DEL /Q %%f
-FOR %%f IN (src\client\*.asm) DO DEL /Q %%f
 PAUSE
 GOTO :eof
 :setupvc
