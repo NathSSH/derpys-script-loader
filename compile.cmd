@@ -14,7 +14,7 @@ PUSHD src
 IF ERRORLEVEL 1 GOTO failpop
 POPD
 PUSHD src\client
-%dsl_cl% /FA /I..\..\include *.c *.cpp library\*.c
+%dsl_cl% /I..\..\include *.c *.cpp library\*.c
 IF ERRORLEVEL 1 GOTO failpop
 ECHO derpy_script_loader.asi
 %dsl_link% /DLL /OUT:..\..\..\derpy_script_loader.asi /LIBPATH:..\..\lib *.obj ..\*.obj %dsl_libs%
