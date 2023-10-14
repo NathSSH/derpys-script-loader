@@ -6,21 +6,6 @@
 #define MAX_REQUIRE_PATH_LENGTH 100
 
 // UTILITY
-static const char* getRelativePath(lua_State *lua,int stack){
-	script_collection *c;
-	
-	if(c = getDslState(lua,1)->manager->running_collection)
-		lua_pushstring(lua,getScriptCollectionPrefix(c));
-	else
-		lua_pushstring(lua,"Scripts/");
-	if(stack){
-		lua_pushvalue(lua,stack);
-		lua_concat(lua,2);
-		lua_replace(lua,stack);
-		return lua_tostring(lua,stack);
-	}
-	return lua_tostring(lua,-1);
-}
 static dsl_file* getFile(lua_State *lua,int reqstd){
 	dsl_file *file;
 	
@@ -40,9 +25,31 @@ static int CanWriteFiles(lua_State *lua){
 	return 1;
 }
 static int GetScriptFilePath(lua_State *lua){
+	script_collection *sc;
+	loader_collection *lc;
+	
 	if(lua_gettop(lua))
 		luaL_checktype(lua,1,LUA_TSTRING);
-	getRelativePath(lua,lua_tostring(lua,1) != NULL);
+	if(sc = getDslState(lua,1)->manager->running_collection){
+		lc = sc->lc;
+		if(!lc)
+			luaL_error(lua,"failed to get current script collection path");
+		if(lc->zip){
+			if(lua_gettop(lua) >= 2)
+				luaL_error(lua,"cannot get file path inside zipped collection");
+			lua_pushfstring(lua,"%s%s",lc->prefix,(char*)(lc+1));
+			return 1;
+		}
+		if(lc->flags & LOADER_FOLDER)
+			lua_pushfstring(lua,"%s%s/",lc->prefix,(char*)(lc+1));
+		else
+			lua_pushstring(lua,lc->prefix);
+	}else
+		lua_pushstring(lua,"Scripts/");
+	if(lua_gettop(lua) >= 2){
+		lua_settop(lua,2);
+		lua_concat(lua,2);
+	}
 	return 1;
 }
 static int GetPackageFilePath(lua_State *lua){
