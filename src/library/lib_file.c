@@ -48,6 +48,7 @@ static int GetScriptFilePath(lua_State *lua){
 		lua_pushstring(lua,"Scripts/");
 	if(lua_gettop(lua) >= 2){
 		lua_settop(lua,2);
+		lua_insert(lua,1);
 		lua_concat(lua,2);
 	}
 	return 1;
