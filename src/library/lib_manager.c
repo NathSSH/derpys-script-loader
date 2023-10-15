@@ -626,7 +626,8 @@ int dslopen_manager(lua_State *lua){
 	lua_register(lua,"GetScriptCollection",&dsl_GetScriptCollection); // (script)             <- get a script's collection name (no arg = use running script).
 	lua_register(lua,"GetScriptEnvironment",&dsl_GetScriptEnvironment); // (script)           <- get a script's environment (no arg = use running script).
 	lua_register(lua,"GetScriptName",&dsl_GetScriptName); // (script)                         <- get a script's name (no arg = use running script).
-	lua_register(lua,"GetScriptSharedTable",&dsl_GetScriptSharedTable); // (private)          <- if private is true, the shared table will not be available in s.
+	lua_register(lua,"GetScriptSharedTable",&dsl_GetScriptSharedTable); // (private)          <- if private is true, the shared table will not be available in the dsl table.
+	lua_register(lua,"GetScriptNetworkTable",&dsl_GetScriptNetworkTable); // ()               <- this table is available in the net table.
 	lua_register(lua,"IsScriptRunning",&dsl_IsScriptRunning); // (script)                     <- returns true if the script is active and not shutting down.
 	lua_register(lua,"IsScriptZipped",&dsl_IsScriptZipped); // (script)                       <- returns true if the script's collection is a zip (no arg = use running script).
 	// SCRIPTS - MISCELLANEOUS
