@@ -869,7 +869,7 @@ void updateDslAfterScripts(dsl_state *state){
 	if(state->save_data == LUA_NOREF)
 		readDslSaveData(state,NULL,0);
 	#endif
-	for(thread = GAME_THREAD;thread <= GAME_THREAD2;thread++){
+	for(thread = PRE_GAME_THREAD;thread <= GAME_THREAD2;thread++){
 		updateScriptManagerUpdate(state->manager,lua,thread);
 		runScriptEvent(state->events,lua,EVENT_MANAGER_UPDATE,(void*)thread);
 	}

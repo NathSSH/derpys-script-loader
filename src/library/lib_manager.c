@@ -458,6 +458,8 @@ static int dsl_CreateAdvancedThread(lua_State *lua){
 	
 	luaL_checktype(lua,1,LUA_TSTRING);
 	type = lua_tostring(lua,1);
+	if(dslisenum(type,"PRE_GAME"))
+		return createThreadOfType(lua,getActiveManager(lua,1),PRE_GAME_THREAD,2);
 	if(dslisenum(type,"GAME"))
 		return createThreadOfType(lua,getActiveManager(lua,1),GAME_THREAD,2);
 	if(dslisenum(type,"GAME2"))
