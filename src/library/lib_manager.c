@@ -453,6 +453,7 @@ static int dsl_CreateSystemThread(lua_State *lua){
 static int dsl_CreateDrawingThread(lua_State *lua){
 	return createThreadOfType(lua,getActiveManager(lua,1),DRAWING_THREAD,1);
 }
+#endif
 static int dsl_CreateAdvancedThread(lua_State *lua){
 	const char *type;
 	
@@ -475,7 +476,6 @@ static int dsl_CreateAdvancedThread(lua_State *lua){
 	luaL_argerror(lua,1,"unknown thread type");
 	return 0;
 }
-#endif
 
 // THREADS - CLEANUP
 static int dsl_TerminateCurrentThread(lua_State *lua){
@@ -639,8 +639,8 @@ int dslopen_manager(lua_State *lua){
 	#ifndef DSL_SERVER_VERSION
 	lua_register(lua,"CreateSystemThread",&dsl_CreateSystemThread); // (func,...)             <- create a system thread.
 	lua_register(lua,"CreateDrawingThread",&dsl_CreateDrawingThread); // (func,...)           <- create a drawing thread.
-	lua_register(lua,"CreateAdvancedThread",&dsl_CreateAdvancedThread); // (type,func,...)    <- create a thread given a type name.
 	#endif
+	lua_register(lua,"CreateAdvancedThread",&dsl_CreateAdvancedThread); // (type,func,...)    <- create a thread given a type name.
 	// THREADS - CLEANUP
 	lua_register(lua,"TerminateCurrentThread",&dsl_TerminateCurrentThread); // ()             <- terminate the running thread.
 	lua_register(lua,"TerminateThread",&dsl_TerminateThread); // (thread)                     <- terminate a thread (no arg = use running thread).
