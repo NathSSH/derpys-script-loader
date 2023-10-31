@@ -399,7 +399,9 @@ int shutdownScript(script *s,lua_State *lua,int cleanup){
 			s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
 		}
 		lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
+		s->flags |= SHUTDOWN_SCRIPT; // temporarily mark script as shutdown for the event
 		runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptShutdown",1);
+		s->flags &= ~SHUTDOWN_SCRIPT;
 		lua_pop(lua,1);
 		for(keep = 0;keep < TOTAL_THREAD_TYPES;keep++)
 			for(shutdown = s->threads[keep];shutdown;shutdown = next){
