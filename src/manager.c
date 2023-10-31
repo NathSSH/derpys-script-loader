@@ -396,7 +396,6 @@ int shutdownScript(script *s,lua_State *lua,int cleanup){
 			lua_pushcfunction(lua,&dsl_GetScriptString);
 			lua_rawset(lua,-3);
 			lua_setmetatable(lua,-2);
-			lua_pushvalue(lua,-1);
 			s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
 		}
 		lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);

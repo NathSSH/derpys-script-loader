@@ -291,9 +291,8 @@ static int dsl_GetCurrentScript(lua_State *lua){
 	
 	s = getActiveManager(lua,1)->running_script;
 	if(s->userdata == LUA_NOREF)
-		createScriptObject(lua,s);
-	else
-		lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
+		return createScriptObject(lua,s);
+	lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
 	return 1;
 }
 static int dsl_GetScriptCollection(lua_State *lua){
