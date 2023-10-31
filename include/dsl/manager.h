@@ -126,7 +126,6 @@ struct script{
 	char script_object[SCRIPT_BYTES];
 	int thread_count; // total count just for checking if the script is needed
 	int userdata; // lua object that holds the script
-	int cleanup; // instant cleanup function
 	int flags;
 	int running;
 	struct script *next;

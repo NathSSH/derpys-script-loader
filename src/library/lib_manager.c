@@ -169,7 +169,7 @@ static dsl_file* openScriptFile(lua_State *lua,script_manager *sm){
 }
 static int createScriptObject(lua_State *lua,script *s){
 	*(script**)lua_newuserdata(lua,sizeof(script*)) = s;
-	s->userdata = LUA_NOREF;
+	s->userdata = LUA_NOREF; // i dont think this is needed actually but it has been here forever so maybe it is
 	lua_newtable(lua);
 	lua_pushstring(lua,"__tostring");
 	lua_pushcfunction(lua,&dsl_GetScriptString);
@@ -286,6 +286,16 @@ static int dsl_TerminateScript(lua_State *lua){
 }
 
 // SCRIPTS - QUERY
+static int dsl_GetCurrentScript(lua_State *lua){
+	script *s;
+	
+	s = getActiveManager(lua,1)->running_script;
+	if(s->userdata == LUA_NOREF)
+		createScriptObject(lua,s);
+	else
+		lua_rawgeti(lua,LUA_REGISTRYINDE,s->userdata);
+	return 1;
+}
 static int dsl_GetScriptCollection(lua_State *lua){
 	script_manager *sm;
 	script *s;
@@ -396,22 +406,6 @@ static int dsl_IsScriptZipped(lua_State *lua){
 		lc = sm->running_collection->lc;
 	lua_pushboolean(lua,lc && lc->zip);
 	return 1;
-}
-
-// SCRIPTS - MISCELLANEOUS
-static int dsl_SetScriptCleanup(lua_State *lua){
-	script_manager *sm;
-	script *s;
-	
-	luaL_checktype(lua,1,LUA_TFUNCTION);
-	if(sm = getActiveManager(lua,1)){
-		s = sm->running_script;
-		if(s->cleanup != LUA_NOREF)
-			luaL_error(lua,"cleanup function already set");
-		lua_settop(lua,1);
-		s->cleanup = luaL_ref(lua,LUA_REGISTRYINDEX);
-	}
-	return 0;
 }
 
 // THREADS - CREATION
@@ -625,6 +619,7 @@ int dslopen_manager(lua_State *lua){
 	lua_register(lua,"TerminateCurrentScript",&dsl_TerminateCurrentScript); // ()             <- stop the running script.
 	lua_register(lua,"TerminateScript",&dsl_TerminateScript); // (script)                     <- stop a script (no arg = use running script).
 	// SCRIPTS - QUERY
+	lua_register(lua,"GetCurrentScript",&dsl_GetCurrentScript); // (script)             <- get the current script object.
 	lua_register(lua,"GetScriptCollection",&dsl_GetScriptCollection); // (script)             <- get a script's collection name (no arg = use running script).
 	lua_register(lua,"GetScriptEnvironment",&dsl_GetScriptEnvironment); // (script)           <- get a script's environment (no arg = use running script).
 	lua_register(lua,"GetScriptName",&dsl_GetScriptName); // (script)                         <- get a script's name (no arg = use running script).
@@ -632,8 +627,6 @@ int dslopen_manager(lua_State *lua){
 	lua_register(lua,"GetScriptNetworkTable",&dsl_GetScriptNetworkTable); // ()               <- this table is available in the net table.
 	lua_register(lua,"IsScriptRunning",&dsl_IsScriptRunning); // (script)                     <- returns true if the script is active and not shutting down.
 	lua_register(lua,"IsScriptZipped",&dsl_IsScriptZipped); // (script)                       <- returns true if the script's collection is a zip (no arg = use running script).
-	// SCRIPTS - MISCELLANEOUS
-	lua_register(lua,"SetScriptCleanup",&dsl_SetScriptCleanup); // (func)                     <- set a callback function for when the script is cleaned up.
 	// THREADS - CREATION
 	lua_register(lua,"CreateThread",&dsl_CreateThread); // (func,...)                         <- create a game thread given a function and any amount of arguments, returns a thread object.
 	#ifndef DSL_SERVER_VERSION

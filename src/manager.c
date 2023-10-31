@@ -21,6 +21,17 @@ struct chunk_loader{
 	int bin;
 };
 
+// Miscellaneous.
+static int dsl_GetScriptString(lua_State *lua){ // lazily copied from manager lib because fuck it it's fine
+	script *s;
+	
+	if(s = *(script**)lua_touserdata(lua,1))
+		lua_pushfstring(lua,"script: %s",getScriptName(s));
+	else
+		lua_pushstring(lua,"invalid script");
+	return 1;
+}
+
 // Reader.
 static int detectConflictingLinebreaks(struct chunk_loader *loader,size_t bytes){
 	char *buffer;
@@ -280,7 +291,6 @@ script* createScript(script_collection *c,int init,int envarg,dsl_file *file,con
 	setupGameScript(s->script_object,"dsl_script");
 	#endif
 	s->userdata = LUA_NOREF;
-	s->cleanup = LUA_NOREF;
 	s->flags = file ? 0 : DISABLE_SCRIPT_FLOW;
 	s->running = 0;
 	s->next = NULL;
@@ -359,6 +369,7 @@ void destroyScript(script *s,lua_State *lua,int cleanup){
 			lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
 			if(sptr = lua_touserdata(lua,-1))
 				*sptr = NULL; // now this userdata points to an invalid script
+			runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptDestroyed",1);
 			lua_pop(lua,1);
 			luaL_unref(lua,LUA_REGISTRYINDEX,s->userdata);
 		}
@@ -378,18 +389,19 @@ int shutdownScript(script *s,lua_State *lua,int cleanup){
 	
 	if(~s->flags & SHUTDOWN_SCRIPT){
 		dsl = s->collection->manager->dsl;
-		if(s->cleanup != LUA_NOREF){
-			s->flags |= SHUTDOWN_SCRIPT; // so created threads become cleanup threads
-			lua_rawgeti(lua,LUA_REGISTRYINDEX,s->cleanup);
-			if(lua_pcall(lua,0,0,0)){
-				if(lua_isstring(lua,-1))
-					printConsoleError(dsl->console,"%s%s",getDslPrintPrefix(dsl,1),lua_tostring(lua,-1));
-				else
-					printConsoleError(dsl->console,"%s%s",getDslPrintPrefix(dsl,1),TEXT_FAIL_UNKNOWN);
-				lua_pop(lua,1);
-			}
-			s->flags &= ~SHUTDOWN_SCRIPT; // so that thread shutdown doesn't destroy this script
+		if(s->userdata == LUA_NOREF){
+			*(script**)lua_newuserdata(lua,sizeof(script*)) = s;
+			lua_newtable(lua);
+			lua_pushstring(lua,"__tostring");
+			lua_pushcfunction(lua,&dsl_GetScriptString);
+			lua_rawset(lua,-3);
+			lua_setmetatable(lua,-2);
+			lua_pushvalue(lua,-1);
+			s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
 		}
+		lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
+		runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptShutdown",1);
+		lua_pop(lua,1);
 		for(keep = 0;keep < TOTAL_THREAD_TYPES;keep++)
 			for(shutdown = s->threads[keep];shutdown;shutdown = next){
 				next = shutdown->next;
