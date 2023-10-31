@@ -3,6 +3,7 @@
 #include <dsl/dsl.h>
 #include <string.h>
 #ifndef _WIN32
+#include <ctype.h>
 #include <time.h>
 #endif
 

@@ -24,7 +24,7 @@ void updateDslAfterScripts(dsl_state*);
 dsl_state *g_dsl = NULL;
 
 // SERVER RUNNING
-static g_running = 1;
+static int g_running = 1;
 
 // INPUT (WINDOWS)
 #ifdef _WIN32
