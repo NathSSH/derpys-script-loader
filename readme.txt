@@ -32,7 +32,8 @@ networking:
 
 -- miscellaneous --
 
-documentation:
+resources:
+ join the discord to get updates, ask questions, find online games, or just hang out: https://discord.gg/r6abc7Avpm
  as a scripter, you can use the light documentation.html or visit the full documentation: http://bullyscripting.net
 
 packages:
