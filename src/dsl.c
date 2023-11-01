@@ -11,6 +11,8 @@
 #include <time.h>
 #include <lualib.h>
 
+//#define COUNT_GLOBAL_FUNCTIONS
+
 // Include patch stuff.
 #ifndef DSL_SERVER_VERSION
 #include <dsl/client/patch.h>
@@ -418,8 +420,23 @@ static void applyPedPoolPatch(){
 #endif
 
 // Init globals.
+#ifdef COUNT_GLOBAL_FUNCTIONS
+static unsigned countScriptFunctions(lua_State *lua){
+	unsigned count;
+	
+	count = 0;
+	lua_pushnil(lua);
+	while(lua_next(lua,LUA_GLOBALSINDEX)){
+		if(lua_isfunction(lua,-1))
+			count++;
+		lua_pop(lua,1);
+	}
+	return count;
+}
+#endif
 static void initScriptGlobals(dsl_state *state){
 	lua_State *lua;
+	unsigned count;
 	int stack;
 	
 	lua = state->lua;
@@ -451,7 +468,13 @@ static void initScriptGlobals(dsl_state *state){
 		lua_settop(lua,stack);
 	}
 	#endif
+	#ifdef COUNT_GLOBAL_FUNCTIONS
+	count = countScriptFunctions(lua);
+	#endif
 	loadScriptLibraries(lua);
+	#ifdef COUNT_GLOBAL_FUNCTIONS
+	printConsoleOutput(state->console,"loadScriptLibraries functions: %d",countScriptFunctions(lua)-count);
+	#endif
 }
 
 // Seed random.
@@ -527,6 +550,8 @@ void closeDsl(dsl_state *state){
 	
 	#ifndef DSL_SERVER_VERSION
 	if(!state->game)
+	#else
+	runLuaScriptEvent(state->events,state->lua,LOCAL_EVENT,"ServerShutdown",0);
 	#endif
 		lua_close(state->lua);
 	if(state->loader)

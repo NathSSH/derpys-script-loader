@@ -18,8 +18,8 @@
 // DSL VERSION
 #define DSL_VERSION 8
 #define DSL_VERSION_LUA 8.0f
-#define DSL_VERSION_NET "dss8p2"
-#define DSL_VERSION_TEXT "version 8 - preview 2"
+#define DSL_VERSION_NET "dss8dev"
+#define DSL_VERSION_TEXT "version 8 - dev"
 
 // VERSION NAME
 #ifdef DSL_DISABLE_SYSTEM_ACCESS
@@ -116,6 +116,7 @@
 #define DSL_CONNECTED_TO_SERVER 32 // disables some stuff permanently
 #define DSL_USED_TEXT_REGISTER 64 // show a warning since this feature is buggy
 #define DSL_WARN_SYSTEM_ACCESS 128 // system access was enabled but is not supported
+#define DSL_RUN_MAIN_LOOP 256
 
 // DSL STATE
 typedef struct dsl_state{

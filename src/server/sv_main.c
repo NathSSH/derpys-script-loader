@@ -23,9 +23,6 @@ void updateDslAfterScripts(dsl_state*);
 // GLOBAL STATE
 dsl_state *g_dsl = NULL;
 
-// SERVER RUNNING
-static int g_running = 1;
-
 // INPUT (WINDOWS)
 #ifdef _WIN32
 struct console_input{
@@ -80,7 +77,7 @@ struct console_input{
 // TERMINATE
 #ifndef _WIN32
 static void handleSigterm(int sig){
-	g_running = 0;
+	g_dsl->flags &= ~DSL_RUN_MAIN_LOOP;
 }
 static int setupSignals(){
 	struct sigaction sa;
@@ -91,7 +88,7 @@ static int setupSignals(){
 }
 #endif
 static void quitCommand(void *arg,int argc,char **argv){
-	g_running = 0;
+	g_dsl->flags &= ~DSL_RUN_MAIN_LOOP;
 }
 
 // TIMING
@@ -195,11 +192,12 @@ int main(int argc,char **argv){
 		#endif
 		return 1;
 	}
-	setScriptCommandEx(dsl->cmdlist,"quit",TEXT_HELP_QUIT,&quitCommand,NULL,1);
 	g_dsl = dsl;
+	dsl->flags |= DSL_RUN_MAIN_LOOP;
+	setScriptCommandEx(dsl->cmdlist,"quit",TEXT_HELP_QUIT,&quitCommand,NULL,1);
 	memset(&ci,0,sizeof(struct console_input));
 	startServerTimer(&st,dsl);
-	while(g_running)
+	while(dsl->flags & DSL_RUN_MAIN_LOOP)
 		if(updateServerTimer(&st,dsl)){
 			#ifdef _WIN32
 			if(updateInput(&ci)){

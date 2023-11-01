@@ -62,7 +62,7 @@ static int GetTimer(lua_State *lua){
 	lua_pushnumber(lua,timer);
 	return 1;
 }
-int ObjectNameToHashID(lua_State *lua){
+static int ObjectNameToHashID(lua_State *lua){
 	const char *str;
 	char c;
 	int x;
@@ -76,6 +76,10 @@ int ObjectNameToHashID(lua_State *lua){
 	x &= 0x7FFFFFFF;
 	lua_pushlightuserdata(lua,(void*)x);
 	return 1;
+}
+static int QuitServer(lua_State *lua){
+	getDslState(lua,1)->flags &= ~DSL_RUN_MAIN_LOOP;
+	return 0;
 }
 #else
 static int ForceWindowUpdate(lua_State *lua){
@@ -331,6 +335,8 @@ int dslopen_miscellaneous(lua_State *lua){
 	lua_register(lua,"IsDslScriptRunning",&IsDslScriptRunning); // boolean ()
 	#ifdef DSL_SERVER_VERSION
 	lua_register(lua,"GetTimer",&GetTimer);
+	lua_register(lua,"ObjectNameToHashID",&ObjectNameToHashID);
+	lua_register(lua,"QuitServer",&QuitServer);
 	#else
 	lua_register(lua,"ForceWindowUpdate",&ForceWindowUpdate);
 	lua_register(lua,"GetInternalResolution",&GetInternalResolution);
