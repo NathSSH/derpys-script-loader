@@ -152,7 +152,7 @@ static int updateServerTimer(struct server_timer *st,dsl_state *dsl){
 		#endif
 		return 0;
 	}
-	if(timer = goal - st->ticks - 1)
+	if(dsl->flags & DSL_SHOW_TICK_WARNINGS && (timer = goal - st->ticks - 1))
 		printConsoleWarning(dsl->console,"missed %u ticks",timer);
 	if(goal < st->ticks){
 		dsl->t_wrapped++;

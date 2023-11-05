@@ -23,12 +23,12 @@ config:
  open up _derpy_script_loader/config.txt after it generates to see extra loader options
 
 console:
- press ~ (can vary in different regions) to toggle the console (unless changed in config)
+ press ~ (or ` in some regions) to toggle the console (unless changed in config)
  use /help for a list of commands
 
 networking:
- there are new experimental networking features that are disabled by default (enable it in the config)
- use /connect to connect to a server if you do not want to install the server browser
+ there are networking features that are disabled by default (enable it in the config)
+ use /connect to connect to a server *or* install the server browser
 
 -- miscellaneous --
 
@@ -47,5 +47,5 @@ extras:
  "server_browser" lets you hit F1 to list and connect to servers in your DSL config (if networking is enabled)
 
 credits:
- derpy54320 - developer (discord: _princesswinter_)
+ derpy54320 - developer
  SWEGTA - ui design

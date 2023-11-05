@@ -115,8 +115,10 @@
 #define DSL_SHOWN_ERROR_WINDOW 16
 #define DSL_CONNECTED_TO_SERVER 32 // disables some stuff permanently
 #define DSL_USED_TEXT_REGISTER 64 // show a warning since this feature is buggy
-#define DSL_WARN_SYSTEM_ACCESS 128 // system access was enabled but is not supported
-#define DSL_RUN_MAIN_LOOP 256
+#define DSL_WARN_SYSTEM_S 128 // system access was enabled but is not supported
+#define DSL_WARN_SYSTEM_N 256 // system access was enabled but is not allowed
+#define DSL_SHOW_TICK_WARNINGS 512
+#define DSL_RUN_MAIN_LOOP 1024
 
 // DSL STATE
 typedef struct dsl_state{

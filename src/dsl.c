@@ -61,7 +61,7 @@ static int makeDefaultConfig(){
 	fprintf(file,"# derpy's script server: config\r\n\
 config_version %d\r\n\
 \r\n\
-[SERVER CONFIG]\r\n\
+[SERVER_CONFIG]\r\n\
 server_name Unconfigured Server\r\n\
 server_info Come play!\r\n\
 #server_icon icon.png              # 1:1 png for icon\r\n\
@@ -70,19 +70,20 @@ server_ip 0.0.0.0                  # listening address (usually not to be change
 server_port 17017                  # listening port number (client defaults to 17017)\r\n\
 server_hz 30                       # how often the server should update\r\n\
 \r\n\
-[SCRIPT LOADING]\r\n\
+[SCRIPT_LOADING]\r\n\
 dont_auto_start false          # prefer not to start script collections automatically\r\n\
 force_auto_start_pref false    # ignore auto_start overrides set by script collections\r\n\
 \r\n\
-[CONSOLE PREFERENCES]\r\n\
-console_logging true    # log console messages to a file\r\n\
+[CONSOLE_PREFERENCES]\r\n\
+console_logging true      # log console messages to a file\r\n\
+console_warnings false    # show warnings about server performance\r\n\
 \r\n\
-[BLACKLIST AND WHITELIST]\r\n\
+[BLACKLIST_AND_WHITELIST]\r\n\
 whitelist_instead false    # only allow whitelisted ips instead of stopping blacklisted ones\r\n\
 #blacklist_ip 0.0.0.0      # add as many blacklist_ip or whitelist_ip lines as you want\r\n\
 #whitelist_ip 0.0.0.0\r\n\
 \r\n\
-[UNRESTRICTED SYSTEM ACCESS]\r\n\
+[UNRESTRICTED_SYSTEM_ACCESS]\r\n\
 allow_system_access false                 # fully load io / os / loadlib libraries (dangerous with downloaded / untrusted scripts)\r\n\
 yes_im_sure_i_know_what_im_doing false    # seriously this gives all scripts you run full access to your system",CONFIG_VERSION);
 	fclose(file);
@@ -100,14 +101,18 @@ static int makeDefaultConfig(){
 	fprintf(file,"# derpy's script loader: config\r\n\
 config_version %d\r\n\
 \r\n\
-[USER PROFILE]\r\n\
-username player    # name for servers\r\n\
+[NETWORKING]\r\n\
+username player           # your username for servers\r\n\
+allow_networking false    # allow connection to servers\r\n\
 \r\n\
-[SCRIPT LOADING]\r\n\
+[SERVER_LIST]\r\n\
+list_server localhost:17017    # allow listing to be shown for this server (add as many list_server lines as you want)\r\n\
+\r\n\
+[SCRIPT_LOADING]\r\n\
 dont_auto_start false          # prefer not to start script collections automatically\r\n\
 force_auto_start_pref false    # ignore auto_start overrides set by script collections\r\n\
 \r\n\
-[CONSOLE PREFERENCES]\r\n\
+[CONSOLE_PREFERENCES]\r\n\
 console_key 0x29                                   # directinput keyboard scan code\r\n\
 console_font Lucida Console                        # must be a font installed on the system\r\n\
 console_scale 1.0                                  # scale for the text in the console window\r\n\
@@ -115,15 +120,11 @@ console_color BB000000                             # background color specified 
 #console_image _derpy_script_loader/example.png    # 1:1 png to replace the default snake signature\r\n\
 console_logging true                               # log console messages during each stage to a file\r\n\
 \r\n\
-[NETWORKING FEATURES]\r\n\
-allow_networking false         # experimental feature (also disables allow_system_access for security reasons)\r\n\
-list_server localhost:17017    # allow listing to be shown for this server (add as many list_server lines as you want)\r\n\
-\r\n\
-[IMG FILE REPLACEMENT]\r\n\
+[IMG_FILE_REPLACEMENT]\r\n\
 allow_img_replacement true      # create temporary copies of img archives that include files supplied by script collections\r\n\
 allow_world_replacement true    # world.img is very large and can drastically increase load times on slow storage\r\n\
 \r\n\
-[UNRESTRICTED SYSTEM ACCESS]\r\n\
+[UNRESTRICTED_SYSTEM_ACCESS]\r\n\
 allow_system_access false                 # fully load io / os / loadlib libraries (dangerous with downloaded / untrusted scripts)\r\n\
 yes_im_sure_i_know_what_im_doing false    # seriously this gives all scripts you run full access to your system",CONFIG_VERSION);
 	fclose(file);
@@ -182,13 +183,16 @@ static int initConfig(dsl_state *state,int *generated){
 	#endif
 	if(getConfigBoolean(state->config,"allow_system_access") && getConfigBoolean(state->config,"yes_im_sure_i_know_what_im_doing"))
 	#ifdef DSL_DISABLE_SYSTEM_ACCESS
-		state->flags |= DSL_WARN_SYSTEM_ACCESS;
+		state->flags |= DSL_WARN_SYSTEM_S;
 	#else
 		state->flags |= DSL_SYSTEM_ACCESS;
 	#endif
 	#ifndef DSL_SERVER_VERSION
 	if(getConfigBoolean(state->config,"allow_networking")){
-		state->flags &= ~DSL_SYSTEM_ACCESS; // prevent ass fucking of user's pc
+		if(state->flags & DSL_SYSTEM_ACCESS){
+			state->flags |= DSL_WARN_SYSTEM_N;
+			state->flags &= ~DSL_SYSTEM_ACCESS; // prevent ass fucking of user's pc
+		}
 		state->flags |= DSL_SERVER_ACCESS;
 	}
 	if(getConfigBoolean(state->config,"dev_add_rebuild_function"))
@@ -304,6 +308,8 @@ static int initConsole(dsl_state *state){
 	if(state->flags & DSL_ADD_REBUILD_FUNC)
 		printConsoleRaw(state->console,CONSOLE_OUTPUT," + reload function");
 	#ifdef DSL_SERVER_VERSION
+	if(getConfigBoolean(state->config,"console_warnings"))
+		state->flags |= DSL_SHOW_TICK_WARNINGS;
 	printf("\r \n> "); // extra line after signature
 	#endif
 	#endif
@@ -632,8 +638,10 @@ dsl_state* openDsl(void *game,void *device,size_t *dsldata){
 		printConsoleRaw(state->console,CONSOLE_OUTPUT,"Generated default config file.");
 	else if(generatedcfg == 2)
 		printConsoleRaw(state->console,CONSOLE_OUTPUT,"Updated config file to new version.");
-	if(state->flags & DSL_WARN_SYSTEM_ACCESS)
+	if(state->flags & DSL_WARN_SYSTEM_S)
 		printConsoleRaw(state->console,CONSOLE_WARNING,"System access is not supported in \"S\" versions.");
+	else if(state->flags & DSL_WARN_SYSTEM_N)
+		printConsoleRaw(state->console,CONSOLE_WARNING,"System access is not allowed when networking is enabled.");
 	return state;
 }
 
