@@ -211,7 +211,7 @@ function T_Drawing()
 	local browser_x = 0.07
 	local browser_y = 0.32
 	local desc_y = 0.005
-	local w_name = 0.35
+	local w_name = 0.4
 	local w_detail = 0.1
 	local max_show = 20
 	local offset = 0
@@ -228,7 +228,7 @@ function T_Drawing()
 		local ar = GetDisplayAspectRatio()
 		local count = table.getn(gBrowser)
 		local height,width,w,h = 0,(list_height+w_name+w_detail)/ar
-		local description = "No server information available, it may not be online right now."
+		local description = "No server information available, it may be offline or running a different version."
 		if count <= max_show then
 			offset = 0
 		elseif gIndex <= offset then
