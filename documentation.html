@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>DSL7 Reference</title>
+		<title>DSL8 Reference</title>
 		<style>
 			:root{
 				color-scheme: dark;
@@ -54,7 +54,7 @@
 	</head>
 	<body>
 		<div id="container">
-			<h1>derpy's script loader 7</h1>
+			<h1>derpy's script loader 8</h1>
 			<div class="section">
 				<p>This is a light version of the full documentation available on <a href="http://bullyscripting.net">bullyscripting.net</a>.</p>
 				<p>It only lists Lua functions created by DSL and provides links to their full documentation pages.</p>
@@ -125,7 +125,6 @@
 			<div class="functions">
 				<h2>file</h2>
 				<div class="section">
-					<p><span>DSL1</span> <a>GetScriptFilePath</a></p>
 					<p><span>DSL1</span> <a>IsSystemAccessAllowed</a></p>
 					<p><span>DSL3</span> <a>GetPackageFilePath</a></p>
 					<p><span>DSL4</span> <a>OpenFile</a></p>
@@ -137,6 +136,7 @@
 					<p><span>DSL4</span> <a>SaveTable</a></p>
 					<p><span>DSL4</span> <a>LoadTable</a></p>
 					<p><span>DSL7</span> <a>CanWriteFiles</a></p>
+					<p><span>DSL8</span> <a>GetScriptFilePath</a></p>
 				</div>
 			</div>
 			<div class="functions">
@@ -216,6 +216,8 @@
 					<p><span>DSL6</span> <a>SetScriptCleanup</a></p>
 					<p><span>DSL7</span> <a>AllowOnServer</a></p>
 					<p><span>DSL7</span> <a>StopCurrentScriptCollection</a></p>
+					<p><span>DSL8</span> <a>GetCurrentScript</a></p>
+					<p><span>DSL8</span> <a>GetScriptNetworkTable</a></p>
 				</div>
 			</div>
 			<div class="functions">
@@ -235,6 +237,8 @@
 					<p><span>DSL5</span> <a>GetInternalResolution</a></p>
 					<p><span>DSL5</span> <a>GetScreenResolution</a></p>
 					<p><span>DSL5</span> <a>QuitGame</a></p>
+					<p><span>DSL8</span> <a>ObjectNameToHashID</a></p>
+					<p><span>DSL8</span> <a>QuitServer</a></p>
 				</div>
 			</div>
 			<div class="functions">
@@ -340,20 +344,22 @@
 				while(count){
 					var tag = tags[--count];
 					var version = tag.innerHTML;
-					if(version === "DSL1")
+					if(version == "DSL1")
 						tag.style.backgroundColor = "#808080";
-					else if(version === "DSL2")
+					else if(version == "DSL2")
 						tag.style.backgroundColor = "#80D020";
-					else if(version === "DSL3")
+					else if(version == "DSL3")
 						tag.style.backgroundColor = "#2080FF";
-					else if(version === "DSL4")
+					else if(version == "DSL4")
 						tag.style.backgroundColor = "#FF40C0";
-					else if(version === "DSL5")
+					else if(version == "DSL5")
 						tag.style.backgroundColor = "#FF0000";
-					else if(version === "DSL6")
+					else if(version == "DSL6")
 						tag.style.backgroundColor = "#8020FF";
-					else if(version === "DSL7")
+					else if(version == "DSL7")
 						tag.style.backgroundColor = "#00C0FF";
+					else if(version == "DSL8")
+						tag.style.backgroundColor = "#C8C878";
 				}
 			})();
 			(function(){
