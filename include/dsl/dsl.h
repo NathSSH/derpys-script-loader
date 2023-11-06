@@ -17,9 +17,9 @@
 
 // DSL VERSION
 #define DSL_VERSION 8
-#define DSL_VERSION_LUA 8.0f
-#define DSL_VERSION_NET "dss8"
-#define DSL_VERSION_TEXT "version 8"
+#define DSL_VERSION_LUA 8.1f
+#define DSL_VERSION_NET "dss8.1dev"
+#define DSL_VERSION_TEXT "version 8.1 - dev"
 
 // VERSION NAME
 #ifdef DSL_DISABLE_SYSTEM_ACCESS

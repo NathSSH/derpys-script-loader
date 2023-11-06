@@ -557,7 +557,8 @@ void closeDsl(dsl_state *state){
 	#ifndef DSL_SERVER_VERSION
 	if(!state->game)
 	#else
-	runLuaScriptEvent(state->events,state->lua,LOCAL_EVENT,"ServerShutdown",0);
+	if(state->events)
+		runLuaScriptEvent(state->events,state->lua,LOCAL_EVENT,"ServerShutdown",0);
 	#endif
 		lua_close(state->lua);
 	if(state->loader)
