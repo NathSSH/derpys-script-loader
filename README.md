@@ -2,6 +2,12 @@
 A script loader for Bully: Scholarship Edition.
 You can see more information [here](http://bullyscripting.net/dsl/about.html).
 
+# known issues
+- Server crashes when generating a config.txt for the first time because it tries to de-reference a NULL pointer during cleanup.
+Luckily this is not critical enough to need an instant patch, as it just crashes right before the program would exit anyway.
+- Command input in the server console is a little clunky still. It also just plain doesn't exist on Linux yet.
+In most cases (on Windows) it suffices, but will still need a full do-over soon.
+
 # contribution
 If you want to make your own example scripts, feel free to go ahead and make a pull request.
 If you find any issues with the loader (or server) code, please open an issue or just make a pull request if it's a quick fix.
