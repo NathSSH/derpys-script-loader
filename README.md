@@ -5,6 +5,8 @@ You can see more information [here](http://bullyscripting.net/dsl/about.html).
 # known issues
 - Server crashes when generating a config.txt for the first time because it tries to de-reference a NULL pointer during cleanup.
 Luckily this is not critical enough to need an instant patch, as it just crashes right before the program would exit anyway.
+- For some reason the server was crashing after restarting a script collection that had an overflow in a network event handler.
+Not at all sure why or how to reproduce it, but it will need to be investigated.
 - Command input in the server console is a little clunky still. It also just plain doesn't exist on Linux yet.
 In most cases (on Windows) it suffices, but will still need a full do-over soon.
 
