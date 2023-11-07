@@ -81,10 +81,12 @@ static int GetServerHz(lua_State *lua){
 static int IsPlayerValid(lua_State *lua){
 	network_player *player;
 	
-	luaL_checktype(lua,1,LUA_TNUMBER);
-	if(lua_gettop(lua) >= 2)
-		luaL_checktype(lua,2,LUA_TBOOLEAN);
-	player = getNetworkPlayerById(getDslState(lua,1)->network,lua_tonumber(lua,1));
+	if(lua_type(lua) == LUA_TNUMBER){
+		if(lua_gettop(lua) >= 2)
+			luaL_checktype(lua,2,LUA_TBOOLEAN);
+		player = getNetworkPlayerById(getDslState(lua,1)->network,lua_tonumber(lua,1));
+	}else
+		player = NULL;
 	lua_pushboolean(lua,player && (lua_toboolean(lua,2) || isNetworkPlayerConnected(player,1)));
 	return 1;
 }
@@ -139,15 +141,16 @@ static int SendNetworkEvent(lua_State *lua){
 		opt = 0;
 	}else
 		bytes = 0;
-	if(lua_tonumber(lua,1) == -1){
+	id = lua_tonumber(lua,1);
+	if(id == -1){
 		net = getDslState(lua,1)->network;
 		for(id = 0;id < net->max_players;id++)
 			if((player = getNetworkPlayerById(net,id)) && isNetworkPlayerConnected(player,1))
 				sendNetworkPlayerEvent(player,lua_tostring(lua,2),serialized,bytes,opt);
-	}else if((player = getPlayer(lua,1)) && isNetworkPlayerConnected(player,1))
+	}else if((player = getNetworkPlayerById(getDslState(lua,1)->network,id)) && isNetworkPlayerConnected(player,1))
 		sendNetworkPlayerEvent(player,lua_tostring(lua,2),serialized,bytes,opt);
 	else
-		luaL_error(lua,"unconnected player");
+		luaL_error(lua,"invalid player");
 	return 0;
 }
 
