@@ -1,4 +1,4 @@
-derpy's script server: version 8
+derpy's script server: version 9
 
 about:
  this is the server version of derpy's script loader and runs scripts very similarly to the normal client version

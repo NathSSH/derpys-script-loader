@@ -344,6 +344,8 @@ int importScript(script_manager *sm,dsl_file *file,const char *name,lua_State *l
 }
 void destroyScript(script *s,lua_State *lua,int cleanup){
 	script_collection *c;
+	script_manager *sm;
+	script_block sb;
 	thread *destroy;
 	dsl_state *dsl;
 	script **sptr;
@@ -356,7 +358,8 @@ void destroyScript(script *s,lua_State *lua,int cleanup){
 		while(destroy = s->threads[i])
 			destroyThread(destroy,lua,cleanup);
 	if(cleanup){
-		dsl = c->manager->dsl;
+		sm = c->manager;
+		dsl = sm->dsl;
 		#ifndef DSL_SERVER_VERSION
 		#ifdef USE_FAKE_THREADS
 		setScriptObjectVirtualThread(s->script_object,NULL);
@@ -369,7 +372,9 @@ void destroyScript(script *s,lua_State *lua,int cleanup){
 			lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
 			if(sptr = lua_touserdata(lua,-1))
 				*sptr = NULL; // now this userdata points to an invalid script
+			startScriptBlock(sm,s,&sb); // this is just to make sure the script isn't fully destroyed during the event
 			runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptDestroyed",1);
+			finishScriptBlock(sm,&sb,lua);
 			lua_pop(lua,1);
 			luaL_unref(lua,LUA_REGISTRYINDEX,s->userdata);
 		}
@@ -384,11 +389,14 @@ void destroyScript(script *s,lua_State *lua,int cleanup){
 }
 int shutdownScript(script *s,lua_State *lua,int cleanup){
 	thread *shutdown,*next;
+	script_manager *sm;
+	script_block sb;
 	dsl_state *dsl;
 	int keep;
 	
 	if(~s->flags & SHUTDOWN_SCRIPT){
-		dsl = s->collection->manager->dsl;
+		sm = s->collection->manager;
+		dsl = sm->dsl;
 		if(s->userdata == LUA_NOREF){
 			*(script**)lua_newuserdata(lua,sizeof(script*)) = s;
 			lua_newtable(lua);
@@ -396,12 +404,13 @@ int shutdownScript(script *s,lua_State *lua,int cleanup){
 			lua_pushcfunction(lua,&dsl_GetScriptString);
 			lua_rawset(lua,-3);
 			lua_setmetatable(lua,-2);
+			lua_pushvalue(lua,-1);
 			s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
-		}
-		lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
-		s->flags |= SHUTDOWN_SCRIPT; // temporarily mark script as shutdown for the event
+		}else
+			lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
+		startScriptBlock(sm,s,&sb); // this is just to make sure the script isn't fully destroyed during the event
 		runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptShutdown",1);
-		s->flags &= ~SHUTDOWN_SCRIPT;
+		finishScriptBlock(sm,&sb,lua);
 		lua_pop(lua,1);
 		for(keep = 0;keep < TOTAL_THREAD_TYPES;keep++)
 			for(shutdown = s->threads[keep];shutdown;shutdown = next){

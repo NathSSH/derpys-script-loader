@@ -16,10 +16,10 @@
 #define DSL_MAIN_H
 
 // DSL VERSION
-#define DSL_VERSION 8
-#define DSL_VERSION_LUA 8.1f
-#define DSL_VERSION_NET "dss8.1dev"
-#define DSL_VERSION_TEXT "version 8.1 - dev"
+#define DSL_VERSION 9
+#define DSL_VERSION_LUA 9.0f
+#define DSL_VERSION_NET "dss9dev"
+#define DSL_VERSION_TEXT "version 9 - dev"
 
 // VERSION NAME
 #ifdef DSL_DISABLE_SYSTEM_ACCESS

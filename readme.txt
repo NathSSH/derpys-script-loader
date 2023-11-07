@@ -1,4 +1,4 @@
-derpy's script loader: version 8
+derpy's script loader: version 9
 
 -- installation --
 
