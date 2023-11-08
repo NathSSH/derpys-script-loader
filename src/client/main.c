@@ -95,6 +95,7 @@ static HRESULT __stdcall setupDevice(void *arg,UINT adapter,D3DDEVTYPE type,HWND
 // GAME MAIN
 static void __cdecl startGame(void *arg){
 	assertSameThread();
+	generateContentHashes();
 	if(g_dsl = openDsl(NULL,NULL,NULL)){
 		initDslContent(g_dsl);
 		g_waitforsave = 1;

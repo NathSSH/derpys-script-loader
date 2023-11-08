@@ -53,9 +53,20 @@ static int RegisterGameFile(lua_State *lua){
 		luaL_error(lua,"failed to replace game file");
 	return 0;
 }
+static int GetContentHash(lua_State *lua){
+	int id;
+	
+	luaL_checktype(lua,1,LUA_TSTRING);
+	id = getContentIdentifier(lua_tostring(lua,1));
+	if(id == -1)
+		luaL_argerror(lua,1,"unknown or unsupported img archive");
+	lua_pushlightuserdata(lua,(void*)getContentHash(id));
+	return 1;
+}
 int dslopen_content(lua_State *lua){
 	if(getDslState(lua,1)->flags & DSL_ADD_REBUILD_FUNC)
 		lua_register(lua,"RebuildArchives",&RebuildArchives);
 	lua_register(lua,"RegisterGameFile",&RegisterGameFile); // void (string archive, string file)
+	lua_register(lua,"GetContentHash",&GetContentHash);
 	return 0;
 }

@@ -555,6 +555,37 @@ static int dsl_Wait(lua_State *lua){
 }
 
 // MANAGER - MISCELLANEOUS
+static int dsl_GetAllScriptInfo(lua_State *lua){
+	script_manager *sm;
+	script_collection *c;
+	loader_collection *lc;
+	script *s;
+	unsigned i;
+	int net;
+	
+	if(lua_gettop(lua))
+		luaL_checktype(lua,1,LUA_TBOOLEAN);
+	sm = getDslState(lua,1)->manager;
+	net = lua_toboolean(lua,1);
+	lua_newtable(lua);
+	for(c = sm->collections;c;c = c->next)
+		if(net == ((lc = c->lc) && lc->flags & LOADER_NETWORK)){
+			lua_pushstring(lua,getScriptCollectionName(c));
+			lua_newtable(lua);
+			for(i = 0,s = c->scripts;s;s = s->next){
+				lua_newtable(lua);
+				lua_pushstring(lua,"name");
+				lua_pushstring(lua,getScriptName(s));
+				lua_rawset(lua,-3);
+				lua_pushstring(lua,"hash");
+				lua_pushlightuserdata(lua,(void*)s->hash);
+				lua_rawset(lua,-3);
+				lua_rawseti(lua,-2,++i);
+			}
+			lua_rawset(lua,-3);
+		}
+	return 1;
+}
 #ifndef DSL_SERVER_VERSION
 static int dsl_UseBaseGameScriptFunctions(lua_State *lua){
 	script_manager *sm;
@@ -643,6 +674,7 @@ int dslopen_manager(lua_State *lua){
 	lua_register(lua,"GetThreadWait",&dsl_GetThreadWait); // ()                               <- help coroutines make use of Wait by returning the time that was used for Wait.
 	lua_register(lua,"Wait",&dsl_Wait); // (ms)                                               <- yield the current thread for some amount of time (or 0 for one tick).
 	// MANAGER - MISCELLANEOUS
+	lua_register(lua,"GetAllScriptInfo",&dsl_GetAllScriptInfo);
 	#ifndef DSL_SERVER_VERSION
 	lua_register(lua,"UseBaseGameScriptFunctions",&dsl_UseBaseGameScriptFunctions); // (bool) <- make the replaced game functions use the original versions for this thread update.
 	#endif

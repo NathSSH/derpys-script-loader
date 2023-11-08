@@ -16,6 +16,7 @@
 struct chunk_loader{
 	dsl_file *file;
 	char data[BUFSIZ];
+	int hash;
 	int warn;
 	int oncr;
 	int bin;
@@ -33,6 +34,18 @@ static int dsl_GetScriptString(lua_State *lua){ // lazily copied from manager li
 }
 
 // Reader.
+static void hashScript(struct chunk_loader *loader,size_t bytes){
+	const char *str;
+	int x;
+	
+	str = loader->data;
+	x = loader->hash;
+	while(bytes){
+		x *= 0x83;
+		x += str[--bytes];
+	}
+	loader->hash = x;
+}
 static int detectConflictingLinebreaks(struct chunk_loader *loader,size_t bytes){
 	char *buffer;
 	size_t i;
@@ -49,6 +62,7 @@ static int detectConflictingLinebreaks(struct chunk_loader *loader,size_t bytes)
 }
 static const char* loadScriptReader(lua_State *lua,struct chunk_loader *loader,size_t *bytesread){
 	if(*bytesread = readDslFile(loader->file,loader->data,BUFSIZ)){
+		hashScript(loader,*bytesread);
 		if(loader->warn && detectConflictingLinebreaks(loader,*bytesread))
 			loader->warn = 0;
 		if(!loader->bin)
@@ -57,7 +71,7 @@ static const char* loadScriptReader(lua_State *lua,struct chunk_loader *loader,s
 	}
 	return NULL;
 }
-static int loadScript(lua_State *lua,dsl_file *file,const char *name,dsl_state *dsl){ // zero = success
+static int loadScript(lua_State *lua,dsl_file *file,const char *name,dsl_state *dsl,int *hash){ // zero = success
 	struct chunk_loader *loader;
 	int status;
 	
@@ -67,12 +81,15 @@ static int loadScript(lua_State *lua,dsl_file *file,const char *name,dsl_state *
 		return LUA_ERRMEM;
 	}
 	loader->file = file;
+	loader->hash = 0;
 	loader->warn = 1;
 	loader->oncr = 0;
 	loader->bin = 0; // 0 at first, 1 if binary or 2 if not
 	*(char*)(loader+1) = '@';
 	strcpy((char*)(loader+1)+1,name);
 	status = lua_load(lua,&loadScriptReader,loader,(char*)(loader+1));
+	if(hash)
+		*hash = loader->hash;
 	if(!loader->warn && loader->bin != 1)
 		printConsoleWarning(dsl->console,"%sdetected macintosh style linebreaks in \"%s\" which will break line number detection, consider fixing this using EOL conversion in notepad++",getDslPrintPrefix(dsl,0),name);
 	free(loader);
@@ -291,6 +308,7 @@ script* createScript(script_collection *c,int init,int envarg,dsl_file *file,con
 	setupGameScript(s->script_object,"dsl_script");
 	#endif
 	s->userdata = LUA_NOREF;
+	s->hash = 0;
 	s->flags = file ? 0 : DISABLE_SCRIPT_FLOW;
 	s->running = 0;
 	s->next = NULL;
@@ -307,7 +325,7 @@ script* createScript(script_collection *c,int init,int envarg,dsl_file *file,con
 	startScriptBlock(sm,s,&sb);
 	if(!file)
 		lua_insert(lua,-2); // put virtual script environment before the function
-	if((file && loadScript(lua,file,name,sm->dsl)) || runScript(s,init,lua)){
+	if((file && loadScript(lua,file,name,sm->dsl,&s->hash)) || runScript(s,init,lua)){
 		lua_replace(lua,-2);
 		shutdownScript(s,lua,0);
 		finishScriptBlock(sm,&sb,lua);
@@ -335,7 +353,7 @@ int importScript(script_manager *sm,dsl_file *file,const char *name,lua_State *l
 	}
 	lua_pushlightuserdata(lua,s);
 	lua_rawget(lua,LUA_REGISTRYINDEX);
-	if(lua_istable(lua,-1) && (loadScript(lua,file,name,sm->dsl) || runScript(s,0,lua))){
+	if(lua_istable(lua,-1) && (loadScript(lua,file,name,sm->dsl,NULL) || runScript(s,0,lua))){
 		lua_replace(lua,-2); // replace environment with error
 		return 0;
 	}

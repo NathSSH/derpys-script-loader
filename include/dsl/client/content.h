@@ -33,6 +33,9 @@ int addContentFile(script_content *sc,loader_collection *lc,int type,const char 
 void addContentUsingLoader(struct dsl_state *dsl);
 int makeArchiveWithContent(struct dsl_state *dsl,int type,const char *spath,const char *dpath); // non-zero = an archive was made and should be used
 
+void generateContentHashes();
+int getContentHash(int type);
+
 #ifdef __cplusplus
 }
 #endif

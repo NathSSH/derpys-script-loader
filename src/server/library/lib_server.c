@@ -81,7 +81,7 @@ static int GetServerHz(lua_State *lua){
 static int IsPlayerValid(lua_State *lua){
 	network_player *player;
 	
-	if(lua_type(lua) == LUA_TNUMBER){
+	if(lua_type(lua,1) == LUA_TNUMBER){
 		if(lua_gettop(lua) >= 2)
 			luaL_checktype(lua,2,LUA_TBOOLEAN);
 		player = getNetworkPlayerById(getDslState(lua,1)->network,lua_tonumber(lua,1));

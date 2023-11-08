@@ -13,6 +13,12 @@
 #define MAX_NAME_LENGTH 24
 #define READ_MIN_BLOCKS 64
 #define MIN_COPY_BUFFER 65536
+#define HASHING_CHUNK_SIZE 8192
+
+//#define HASH_ALL_CONTENT
+
+// HASHES
+static int g_hashes[CONTENT_TYPES];
 
 // GENERAL UTILITY
 static const char* getFileName(const char *path){
@@ -22,6 +28,46 @@ static const char* getFileName(const char *path){
 		if(*path == '/' || *path == '\\')
 			name = path + 1;
 	return name;
+}
+
+// CONTENT HASHES
+static int generateContentHash(const char *path){
+	char buffer[HASHING_CHUNK_SIZE];
+	DWORD bytes;
+	HANDLE file;
+	int hash;
+	
+	file = CreateFile(path,GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+	if(file == INVALID_HANDLE_VALUE)
+		return 0;
+	hash = 0;
+	while(ReadFile(file,buffer,HASHING_CHUNK_SIZE,&bytes,NULL)){
+		if(!bytes){
+			CloseHandle(file);
+			return hash;
+		}
+		while(bytes){
+			hash *= 0x83;
+			hash += buffer[--bytes];
+		}
+	}
+	CloseHandle(file);
+	return 0;
+}
+void generateContentHashes(){
+	#ifdef HASH_ALL_CONTENT
+	g_hashes[CONTENT_ACT_IMG] = generateContentHash("Act/Act.img");
+	g_hashes[CONTENT_CUTS_IMG] = generateContentHash("Cuts/Cuts.img");
+	g_hashes[CONTENT_TRIGGER_IMG] = generateContentHash("DAT/Trigger.img");
+	g_hashes[CONTENT_IDE_IMG] = generateContentHash("Objects/ide.img");
+	#endif
+	g_hashes[CONTENT_SCRIPTS_IMG] = generateContentHash("Scripts/Scripts.img");
+	#ifdef HASH_ALL_CONTENT
+	g_hashes[CONTENT_WORLD_IMG] = generateContentHash("Stream/World.img");
+	#endif
+}
+int getContentHash(int type){
+	return g_hashes[type];
 }
 
 // MAIN TYPES
@@ -426,6 +472,7 @@ int makeArchiveWithContent(dsl_state *dsl,int type,const char *source,const char
 	}
 	sc->replaced = 1;
 	cleanupBuild(bs);
+	g_hashes[type] = generateContentHash(destination);
 	printConsoleOutput(dsl->console,"built %.*s.img in %lu ms",strlen(dpath)-4,dpath,GetTickCount()-timer);
 	return 1;
 }

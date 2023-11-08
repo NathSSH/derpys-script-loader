@@ -8,6 +8,21 @@
 #endif
 
 // MISCELLANEOUS
+static int GetHash(lua_State *lua){
+	const char *str;
+	char c;
+	int x;
+	
+	luaL_checktype(lua,1,LUA_TSTRING);
+	str = lua_tostring(lua,1);
+	for(x = 0;c = *str;str++){
+		x *= 0x83;
+		x += c;
+	}
+	x &= 0x7FFFFFFF;
+	lua_pushlightuserdata(lua,(void*)x);
+	return 1;
+}
 static int GetFrameTime(lua_State *lua){
 	lua_pushnumber(lua,getDslState(lua,1)->frame_time/1000.0f);
 	return 1;
@@ -278,22 +293,18 @@ static int UseProxyScriptForFunction(lua_State *lua){
 }
 #endif
 
-// DEBUG
+// SCRIPTS
 #ifndef DSL_SERVER_VERSION
-struct lua_functions{
-	const char *name;
-	lua_CFunction func;
-};
 static int GetNativeScripts(lua_State *lua){
 	void *game;
 	void **pool;
 	int count;
 	int index;
 	
-	lua_newtable(lua);
 	game = getDslState(lua,1)->game;
 	if(!game)
 		luaL_error(lua,"game not ready");
+	lua_newtable(lua);
 	pool = getGameScriptPool(game);
 	count = getGameScriptCount(game);
 	index = 0;
@@ -301,9 +312,17 @@ static int GetNativeScripts(lua_State *lua){
 		lua_pushstring(lua,(char*)pool[index]+4);
 		lua_rawseti(lua,-2,++index);
 	}
-	lua_pushnumber(lua,getGameScriptIndex(game));
-	return 2;
+	//lua_pushnumber(lua,getGameScriptIndex(game));
+	return 1;
 }
+#endif
+
+// DEBUG
+#ifndef DSL_SERVER_VERSION
+struct lua_functions{
+	const char *name;
+	lua_CFunction func;
+};
 static int GetLuaFunctions(lua_State *lua){
 	struct lua_functions *address;
 	
@@ -329,6 +348,7 @@ static int GetRegistry(lua_State *lua){
 // OPEN
 int dslopen_miscellaneous(lua_State *lua){
 	// miscellaneous
+	lua_register(lua,"GetHash",&GetHash); // number ()
 	lua_register(lua,"GetFrameTime",&GetFrameTime); // number ()
 	lua_register(lua,"GetPersistentDataTable",&GetPersistentDataTable); // table ()
 	lua_register(lua,"GetSystemTimer",&GetSystemTimer); // number ()
@@ -349,10 +369,13 @@ int dslopen_miscellaneous(lua_State *lua){
 	lua_register(lua,"CallFunctionFromScript",&CallFunctionFromScript); // ... (name*,func)
 	lua_register(lua,"UseProxyScriptForFunction",&UseProxyScriptForFunction); // void (func_name)
 	#endif
+	// scripts
+	#ifndef DSL_SERVER_VERSION
+	lua_register(lua,"GetNativeScripts",&GetNativeScripts);
+	#endif
 	// debug
 	if(getDslState(lua,1)->flags & DSL_ADD_DEBUG_FUNCS){
 		#ifndef DSL_SERVER_VERSION
-		lua_register(lua,"GetNativeScripts",&GetNativeScripts);
 		lua_register(lua,"GetLuaFunctions",&GetLuaFunctions);
 		#endif
 		lua_register(lua,"GetRegistry",&GetRegistry);
