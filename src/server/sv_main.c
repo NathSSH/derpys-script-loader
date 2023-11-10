@@ -276,13 +276,16 @@ int main(int argc,char **argv){
 	#else
 	if(setupSignals()){
 		printf("failed to setup signal handlers\n");
+		fflush(stdout);
 		return 1;
 	}
 	#endif
 	dsl = openDsl(NULL,NULL,NULL);
 	if(!dsl){
+		#ifdef _WIN32
 		printf("\r "); // remove the >
 		fflush(stdout);
+		#endif
 		#ifdef DSL_SYSTEM_PAUSE
 		system(DSL_SYSTEM_PAUSE);
 		#endif
@@ -296,8 +299,10 @@ int main(int argc,char **argv){
 	while(dsl->flags & DSL_RUN_MAIN_LOOP)
 		if(updateServerTimer(&st,dsl)){
 			if(updateConsoleInput(&ci)){
+				#ifdef _WIN32
 				printf("> "); // just in case no console output replaces it
 				fflush(stdout);
+				#endif
 				if(*ci.buffer && !processScriptCommandLine(dsl->cmdlist,ci.buffer))
 					printConsoleError(dsl->console,"command does not exist");
 			}
@@ -307,6 +312,11 @@ int main(int argc,char **argv){
 		}
 	closeDsl(dsl);
 	stopConsoleInput(&ci);
+	#ifdef _WIN32
+	printf("\rserver shutdown\n");
+	#else
 	printf("server shutdown\n");
+	#endif
+	fflush(stdout);
 	return 0;
 }

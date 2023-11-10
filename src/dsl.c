@@ -311,7 +311,11 @@ static int initConsole(dsl_state *state){
 	#ifdef DSL_SERVER_VERSION
 	if(getConfigBoolean(state->config,"console_warnings"))
 		state->flags |= DSL_SHOW_TICK_WARNINGS;
+	#ifdef _WIN32
 	printf("\r \n> "); // extra line after signature
+	#else
+	printf("\n");
+	#endif
 	fflush(stdout);
 	#endif
 	#endif

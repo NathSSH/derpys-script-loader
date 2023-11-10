@@ -65,11 +65,12 @@ int printConsoleRaw(script_console *sc,int type,const char *str){
 		SetConsoleTextAttribute(console,FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE);
 		WriteConsole(console,"\n> ",3,NULL,NULL);
 	}else{
-	#endif
 		printf("\r%s\n> ",str);
 		fflush(stdout);
-	#ifdef _WIN32
 	}
+	#else
+	printf("%s\n",str);
+	fflush(stdout);
 	#endif
 	return 0;
 }
@@ -81,9 +82,15 @@ int setScriptConsoleLogging(script_console *sc,const char *path){
 void clearScriptConsole(script_console *sc){
 	#ifdef DSL_SYSTEM_CLS
 	system(DSL_SYSTEM_CLS);
+	#ifdef _WIN32
 	printf("> ");
+	#endif
 	#else
-	printf("\rconsole clearing unsupported\n> ");
+	#ifdef _WIN32
+	printf("console clearing unsupported\n> ");
+	#else
+	printf("console clearing unsupported\n");
+	#endif
 	#endif
 	fflush(stdout);
 }
