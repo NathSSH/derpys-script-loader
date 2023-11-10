@@ -29,6 +29,6 @@ PUSHD ..
 %zip_exe% a -sse -y -mx9 %dsl_path%/derpy_script_preview.zip derpy_script_loader.asi dinput8.dll >NUL
 POPD
 PUSHD server
-%zip_exe% a -sse -y -mx9 ../derpy_script_preview.zip derpy_script_server.exe >NUL
+%zip_exe% a -sse -y -mx9 ../derpy_script_preview.zip derpy_script_server.exe derpy_script_server >NUL
 POPD
 %zip_exe% a -sse -y -mx9 derpy_script_preview.zip preview.txt >NUL

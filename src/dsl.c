@@ -664,6 +664,8 @@ static void* __cdecl openWorldImg(const char *name,const char *mode){
 	return (*(void*(__cdecl*)(const char*,const char*))0x42D260)(DSL_CONTENT_PATH"World.img",mode);
 }
 void initDslContent(dsl_state *state){
+	if(!generateContentHashes(state))
+		printConsoleWarning(state->console,"failed to hash game files");
 	if(!getConfigBoolean(state->config,"allow_img_replacement"))
 		return;
 	if(!checkDslPathExists(DSL_CONTENT_PATH,0)){

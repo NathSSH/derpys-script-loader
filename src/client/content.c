@@ -13,14 +13,30 @@
 #define MAX_NAME_LENGTH 24
 #define READ_MIN_BLOCKS 64
 #define MIN_COPY_BUFFER 65536
-#define HASHING_CHUNK_SIZE 8192
 
 //#define HASH_ALL_CONTENT
 
 // HASHES
 static int g_hashes[CONTENT_TYPES];
 
+// TYPES
+typedef struct dir_file{
+	unsigned offset;
+	unsigned size;
+	char name[MAX_NAME_LENGTH];
+}dir_file;
+
 // GENERAL UTILITY
+static char* toUpperString(char *dest,char *src,int n){
+	int i;
+	
+	for(i = 0;i < n;i++){
+		if(!src[i])
+			break;
+		dest[i] = toupper(src[i]);
+	}
+	return dest;
+}
 static const char* getFileName(const char *path){
 	const char *name;
 	
@@ -31,41 +47,123 @@ static const char* getFileName(const char *path){
 }
 
 // CONTENT HASHES
-static int generateContentHash(const char *path){
-	char buffer[HASHING_CHUNK_SIZE];
+static dir_file* getFilesForHash(const char *path,unsigned *count){
+	char buffer[32];
+	dir_file *files;
+	DWORD dirsize;
 	DWORD bytes;
-	HANDLE file;
+	HANDLE dir;
+	
+	strcpy(buffer,path);
+	strcpy(buffer+strlen(buffer)-3,"dir");
+	dir = CreateFile(buffer,GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+	if(dir == INVALID_HANDLE_VALUE)
+		return NULL;
+	dirsize = GetFileSize(dir,NULL);
+	if(!dirsize || dirsize == INVALID_FILE_SIZE || dirsize % sizeof(dir_file) || !(files = malloc(dirsize))){
+		CloseHandle(dir);
+		return NULL;
+	}
+	if(ReadFile(dir,files,dirsize,&bytes,NULL) && bytes == dirsize){
+		*count = bytes / sizeof(dir_file);
+		CloseHandle(dir);
+		return files;
+	}
+	CloseHandle(dir);
+	free(files);
+	return NULL;
+}
+static dir_file* sortFilesForHash(dir_file *files,unsigned count){
+	char a[MAX_NAME_LENGTH];
+	char b[MAX_NAME_LENGTH];
+	dir_file *sorted;
+	unsigned index;
+	unsigned add;
+	unsigned sh;
+	
+	sorted = malloc(count * sizeof(dir_file));
+	if(!sorted){
+		free(files);
+		return NULL;
+	}
+	for(index = 0;index < count;index++){
+		toUpperString(a,files[index].name,MAX_NAME_LENGTH);
+		for(add = 0;add < index;add++)
+			if(strncmp(toUpperString(b,sorted[add].name,MAX_NAME_LENGTH),a,MAX_NAME_LENGTH) > 0)
+				break; // add it here
+		for(sh = index;sh > add;sh--)
+			memcpy(sorted+sh,sorted+sh-1,sizeof(dir_file)); // shift up
+		memcpy(sorted+add,files+index,sizeof(dir_file));
+	}
+	free(files);
+	return sorted;
+}
+static int getHashUsingFiles(HANDLE img,dir_file *files,unsigned count,int *result){
+	char buffer[BLOCK_SIZE];
+	unsigned index;
+	DWORD bytes;
 	int hash;
 	
-	file = CreateFile(path,GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
-	if(file == INVALID_HANDLE_VALUE)
-		return 0;
 	hash = 0;
-	while(ReadFile(file,buffer,HASHING_CHUNK_SIZE,&bytes,NULL)){
-		if(!bytes){
-			CloseHandle(file);
-			return hash;
+	for(index = 0;index < count;index++){
+		if(SetFilePointer(img,files[index].offset*BLOCK_SIZE,NULL,FILE_BEGIN) == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
+			return 0;
+		while(files[index].size && ReadFile(img,buffer,BLOCK_SIZE,&bytes,NULL) && bytes == BLOCK_SIZE){
+			while(bytes){
+				hash *= 0x83;
+				hash += buffer[--bytes];
+			}
+			files[index].size--;
 		}
-		while(bytes){
-			hash *= 0x83;
-			hash += buffer[--bytes];
-		}
+		if(files[index].size)
+			return 0;
 	}
-	CloseHandle(file);
+	*result = hash;
+	return 1;
+}
+static int generateContentHash(script_console *sc,const char *path,int *result){
+	dir_file *files;
+	unsigned count;
+	HANDLE img;
+	DWORD time;
+	
+	time = GetTickCount();
+	files = getFilesForHash(path,&count);
+	if(!files)
+		return 0;
+	files = sortFilesForHash(files,count);
+	if(!files)
+		return 0;
+	img = CreateFile(path,GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+	if(img == INVALID_HANDLE_VALUE){
+		free(files);
+		return 0;
+	}
+	if(getHashUsingFiles(img,files,count,result)){
+		printConsoleOutput(sc,"hashed %s in %lu ms",path,GetTickCount()-time);
+		CloseHandle(img);
+		free(files);
+		return 1;
+	}
+	CloseHandle(img);
+	free(files);
 	return 0;
 }
-void generateContentHashes(){
-	#ifdef HASH_ALL_CONTENT
-	g_hashes[CONTENT_ACT_IMG] = generateContentHash("Act/Act.img");
-	g_hashes[CONTENT_CUTS_IMG] = generateContentHash("Cuts/Cuts.img");
-	g_hashes[CONTENT_TRIGGER_IMG] = generateContentHash("DAT/Trigger.img");
-	g_hashes[CONTENT_IDE_IMG] = generateContentHash("Objects/ide.img");
-	#endif
-	g_hashes[CONTENT_SCRIPTS_IMG] = generateContentHash("Scripts/Scripts.img");
-	#ifdef HASH_ALL_CONTENT
-	g_hashes[CONTENT_WORLD_IMG] = generateContentHash("Stream/World.img");
-	#endif
+#ifdef HASH_ALL_CONTENT
+int generateContentHashes(dsl_state *dsl){
+	static const char *names[] = {"Act/Act.img","Cuts/Cuts.img","DAT/Trigger.img","Objects/ide.img","Scripts/Scripts.img","Stream/World.img"};
+	int index;
+	
+	for(index = 0;index < CONTENT_TYPES;index++)
+		if(!generateContentHash(dsl->console,names[index],g_hashes+index))
+			return 0;
+	return 1;
 }
+#else
+int generateContentHashes(dsl_state *dsl){
+	return generateContentHash(dsl->console,"Scripts/Scripts.img",g_hashes+CONTENT_SCRIPTS_IMG);
+}
+#endif
 int getContentHash(int type){
 	return g_hashes[type];
 }
@@ -189,11 +287,6 @@ void addContentUsingLoader(dsl_state *dsl){
 }
 
 // BUILD TYPES
-typedef struct dir_file{
-	unsigned offset;
-	unsigned size;
-	char name[MAX_NAME_LENGTH];
-}dir_file;
 typedef struct build_state{
 	HANDLE input;
 	HANDLE output;
@@ -472,7 +565,8 @@ int makeArchiveWithContent(dsl_state *dsl,int type,const char *source,const char
 	}
 	sc->replaced = 1;
 	cleanupBuild(bs);
-	g_hashes[type] = generateContentHash(destination);
 	printConsoleOutput(dsl->console,"built %.*s.img in %lu ms",strlen(dpath)-4,dpath,GetTickCount()-timer);
+	if(!generateContentHash(dsl->console,destination,g_hashes+type))
+		printConsoleWarning(dsl->console,"failed to hash rebuilt archive");
 	return 1;
 }
