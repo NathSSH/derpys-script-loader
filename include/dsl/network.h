@@ -33,6 +33,7 @@ struct file_update;
 #define NET_MAX_ERROR_BUFFER 1024 // not enforced so it should be big enough for any error
 #ifdef DSL_SERVER_VERSION
 #define NET_CLIENT_ADDR_BYTES 32
+#define NET_CLIENT_KICK_BYTES 256
 #else
 #define NET_MAX_HOST_BYTES 128 // overkill for any domain name
 #endif
@@ -81,6 +82,7 @@ typedef struct network_player{
 	struct file_update *files; // NULL unless doing a file update
 	char name[NET_MAX_USERNAME_BYTES];
 	char address[NET_CLIENT_ADDR_BYTES];
+	char shouldkick[NET_CLIENT_KICK_BYTES];
 	char send[NET_MAX_MESSAGE_BUFFER];
 	int sndi;
 	char recv[NET_MAX_MESSAGE_BUFFER];

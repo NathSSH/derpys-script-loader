@@ -64,9 +64,13 @@ int printConsoleRaw(script_console *sc,int type,const char *str){
 		WriteConsole(console,str,strlen(str),NULL,NULL);
 		SetConsoleTextAttribute(console,FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE);
 		WriteConsole(console,"\n> ",3,NULL,NULL);
-	}else
+	}else{
 	#endif
 		printf("\r%s\n> ",str);
+		fflush(stdout);
+	#ifdef _WIN32
+	}
+	#endif
 	return 0;
 }
 int setScriptConsoleLogging(script_console *sc,const char *path){
@@ -81,6 +85,7 @@ void clearScriptConsole(script_console *sc){
 	#else
 	printf("\rconsole clearing unsupported\n> ");
 	#endif
+	fflush(stdout);
 }
 
 // Formatted.

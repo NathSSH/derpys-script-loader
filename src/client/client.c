@@ -134,6 +134,30 @@ static int createListingTexture(dsl_state *dsl,server_listing *listing,char *dat
 }
 
 // OTHER
+static int* getHashes(script_manager *sm,net_msg_size *result){
+	int *hashes;
+	int count;
+	script_collection *c;
+	script *s;
+	
+	count = CONTENT_TYPES + 1; // +1 for count
+	for(c = sm->collections;c;c = c->next)
+		for(s = c->scripts;s;s = s->next)
+			if(s->flags & HASHED_SCRIPT)
+				count++;
+	hashes = malloc(*result = count * sizeof(int));
+	if(!hashes)
+		return NULL;
+	*(unsigned*)hashes = count * sizeof(int);
+	for(count = 0;count < CONTENT_TYPES;count++)
+		hashes[count+1] = getContentHash(count);
+	count = CONTENT_TYPES + 1;
+	for(c = sm->collections;c;c = c->next)
+		for(s = c->scripts;s;s = s->next)
+			if(s->flags & HASHED_SCRIPT)
+				hashes[count++] = s->hash;
+	return hashes;
+}
 static void freeNetworkScripts(network_scripts *ns){
 	if(ns->active)
 		free(ns->active);
@@ -232,6 +256,8 @@ static int msgKicked(dsl_state *dsl,server_state *svs,net_msg_size bytes,char *m
 static int msgWhatup(dsl_state *dsl,server_state *svs,net_msg_size bytes,char *message){
 	char buffer[NET_MAX_USERNAME_BYTES];
 	const char *username;
+	net_msg_size hash_bytes;
+	int *hashes;
 	char value[4];
 	
 	username = getConfigString(dsl->config,"username");
@@ -241,13 +267,27 @@ static int msgWhatup(dsl_state *dsl,server_state *svs,net_msg_size bytes,char *m
 		username = strncpy(buffer,username,NET_MAX_USERNAME_BYTES-1);
 		buffer[NET_MAX_USERNAME_BYTES-1] = 0;
 	}
-	*(net_msg_size*)value = sizeof(net_msg_size) + 1 + sizeof(uint32_t) + sizeof(NET_SIGNATURE) + strlen(username);
+	if(svs->flags & FLAG_LISTING){
+		hashes = NULL;
+		hash_bytes = sizeof(int);
+	}else if(!(hashes = getHashes(dsl->manager,&hash_bytes))){
+		sprintf(dsl->network->error,TEXT_FAIL_ALLOCATE,"script hashes");
+		return 1;
+	}
+	*(net_msg_size*)value = sizeof(net_msg_size) + 1 + sizeof(uint32_t) + sizeof(NET_SIGNATURE) + hash_bytes + strlen(username);
 	sendBytes(svs,value,sizeof(net_msg_size));
-	*(char*)value = svs->flags & FLAG_LISTING ? NET_MSG_LISTING : NET_MSG_CONNECT;
+	*value = hashes ? NET_MSG_CONNECT : NET_MSG_LISTING;
 	sendBytes(svs,value,1);
 	*(uint32_t*)value = DSL_VERSION;
 	sendBytes(svs,value,sizeof(uint32_t));
 	sendBytes(svs,NET_SIGNATURE,sizeof(NET_SIGNATURE));
+	if(hashes){
+		sendBytes(svs,hashes,hash_bytes);
+		free(hashes);
+	}else{
+		*(int*)value = sizeof(int);
+		sendBytes(svs,value,sizeof(int));
+	}
 	if(*username)
 		sendBytes(svs,username,strlen(username));
 	return 0;

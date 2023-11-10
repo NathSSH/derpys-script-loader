@@ -277,7 +277,7 @@ int getConfigBooleanArray(config_file *ptr,const char *key,int index){
 	if(value = getConfigValueArray(ptr,key,index)){
 		if(*value >= '0' && *value <= '9')
 			return *value != '0';
-		return !dslstrcmp(value,"true");
+		return tolower(*value) != 'f';
 	}
 	return 0;
 }

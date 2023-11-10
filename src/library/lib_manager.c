@@ -144,17 +144,6 @@ static int dsl_RequireSystemAccess(lua_State *lua){
 	return 0;
 }
 
-// SCRIPTS - METAMETHODS
-static int dsl_GetScriptString(lua_State *lua){
-	script *s;
-	
-	if(s = *(script**)lua_touserdata(lua,1))
-		lua_pushfstring(lua,"script: %s",getScriptName(s));
-	else
-		lua_pushstring(lua,"invalid script");
-	return 1;
-}
-
 // SCRIPTS - INVOCATION
 static dsl_file* openScriptFile(lua_State *lua,script_manager *sm){
 	const char *name;
@@ -168,15 +157,7 @@ static dsl_file* openScriptFile(lua_State *lua,script_manager *sm){
 	return file;
 }
 static int createScriptObject(lua_State *lua,script *s){
-	*(script**)lua_newuserdata(lua,sizeof(script*)) = s;
-	s->userdata = LUA_NOREF; // i dont think this is needed actually but it has been here forever so maybe it is
-	lua_newtable(lua);
-	lua_pushstring(lua,"__tostring");
-	lua_pushcfunction(lua,&dsl_GetScriptString);
-	lua_rawset(lua,-3);
-	lua_setmetatable(lua,-2);
-	lua_pushvalue(lua,-1);
-	s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
+	getScriptUserdata(lua,s);
 	return 1;
 }
 #ifndef DSL_SERVER_VERSION
@@ -287,12 +268,7 @@ static int dsl_TerminateScript(lua_State *lua){
 
 // SCRIPTS - QUERY
 static int dsl_GetCurrentScript(lua_State *lua){
-	script *s;
-	
-	s = getActiveManager(lua,1)->running_script;
-	if(s->userdata == LUA_NOREF)
-		return createScriptObject(lua,s);
-	lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
+	getScriptUserdata(lua,getActiveManager(lua,1)->running_script);
 	return 1;
 }
 static int dsl_GetScriptCollection(lua_State *lua){
@@ -555,6 +531,19 @@ static int dsl_Wait(lua_State *lua){
 }
 
 // MANAGER - MISCELLANEOUS
+#ifndef DSL_SERVER_VERSION
+static int dsl_UseBaseGameScriptFunctions(lua_State *lua){
+	script_manager *sm;
+	
+	luaL_checktype(lua,1,LUA_TBOOLEAN);
+	if(sm = getActiveManager(lua,0))
+		sm->use_base_funcs = lua_toboolean(lua,1);
+	return 0;
+}
+#endif
+
+// DEBUG
+#ifndef DSL_SERVER_VERSION
 static int dsl_GetAllScriptInfo(lua_State *lua){
 	script_manager *sm;
 	script_collection *c;
@@ -577,23 +566,72 @@ static int dsl_GetAllScriptInfo(lua_State *lua){
 				lua_pushstring(lua,"name");
 				lua_pushstring(lua,getScriptName(s));
 				lua_rawset(lua,-3);
-				lua_pushstring(lua,"hash");
-				lua_pushlightuserdata(lua,(void*)s->hash);
-				lua_rawset(lua,-3);
+				if(s->flags & HASHED_SCRIPT){
+					lua_pushstring(lua,"hash");
+					lua_pushlightuserdata(lua,(void*)s->hash);
+					lua_rawset(lua,-3);
+				}
 				lua_rawseti(lua,-2,++i);
 			}
 			lua_rawset(lua,-3);
 		}
 	return 1;
 }
-#ifndef DSL_SERVER_VERSION
-static int dsl_UseBaseGameScriptFunctions(lua_State *lua){
-	script_manager *sm;
+static int dsl_GetScriptObject(lua_State *lua){
+	script *s;
 	
-	luaL_checktype(lua,1,LUA_TBOOLEAN);
-	if(sm = getActiveManager(lua,0))
-		sm->use_base_funcs = lua_toboolean(lua,1);
+	if(lua_gettop(lua)){
+		luaL_checktype(lua,1,LUA_TUSERDATA);
+		s = *(script**)lua_touserdata(lua,1);
+	}else
+		s = getDslState(lua,1)->manager->running_script;
+	if(!s || s->flags & SHUTDOWN_SCRIPT)
+		luaL_error(lua,"invalid script");
+	lua_pushlstring(lua,s->script_object,SCRIPT_BYTES);
+	return 1;
+}
+static int dsl_CompareNextScriptObject(lua_State *lua){
+	const char *a;
+	const char *b;
+	char buf[12];
+	int i;
+	
+	luaL_checktype(lua,1,LUA_TUSERDATA);
+	luaL_checktype(lua,2,LUA_TNUMBER);
+	a = lua_touserdata(lua,1);
+	i = lua_tonumber(lua,2);
+	b = a + SCRIPT_BYTES;
+	if(i < 0)
+		i = 0;
+	else
+		i += 4;
+	for(;i < SCRIPT_BYTES;i++)
+		if(a[i] != b[i]){
+			lua_pushnumber(lua,i);
+			i -= i % 4;
+			sprintf(buf,"%.2hhX %.2hhX %.2hhX %.2hhX",(unsigned char)a[i],(unsigned char)a[i+1],(unsigned char)a[i+2],(unsigned char)a[i+3]);
+			lua_pushlstring(lua,buf,sizeof(buf));
+			sprintf(buf,"%.2hhX %.2hhX %.2hhX %.2hhX",(unsigned char)b[i],(unsigned char)b[i+1],(unsigned char)b[i+2],(unsigned char)b[i+3]);
+			lua_pushlstring(lua,buf,sizeof(buf));
+			return 3;
+		}
 	return 0;
+}
+static int dsl_CompareScriptObjects(lua_State *lua){
+	char *str;
+	
+	luaL_checktype(lua,1,LUA_TSTRING);
+	luaL_checktype(lua,2,LUA_TSTRING);
+	if(lua_strlen(lua,1) != SCRIPT_BYTES)
+		luaL_argerror(lua,1,"invalid script object");
+	if(lua_strlen(lua,2) != SCRIPT_BYTES)
+		luaL_argerror(lua,2,"invalid script object");
+	lua_pushcfunction(lua,&dsl_CompareNextScriptObject);
+	str = lua_newuserdata(lua,SCRIPT_BYTES*2);
+	memcpy(str,lua_tostring(lua,1),SCRIPT_BYTES);
+	memcpy(str+SCRIPT_BYTES,lua_tostring(lua,2),SCRIPT_BYTES);
+	lua_pushnumber(lua,-1);
+	return 3;
 }
 #endif
 
@@ -607,8 +645,11 @@ static int createdScript(lua_State *lua,void *arg,script *t){
 }
 #endif
 int dslopen_manager(lua_State *lua){
+	dsl_state *dsl;
+	
+	dsl = getDslState(lua,1);
 	#ifndef DSL_SERVER_VERSION
-	addScriptEventCallback(getDslState(lua,1)->events,EVENT_SCRIPT_CREATED,(script_event_cb)&createdScript,NULL);
+	addScriptEventCallback(dsl->events,EVENT_SCRIPT_CREATED,(script_event_cb)&createdScript,NULL);
 	#endif
 	// COLLECTIONS - GLOBAL SHARED
 	lua_pushstring(lua,"dsl");
@@ -649,7 +690,7 @@ int dslopen_manager(lua_State *lua){
 	lua_register(lua,"TerminateCurrentScript",&dsl_TerminateCurrentScript); // ()             <- stop the running script.
 	lua_register(lua,"TerminateScript",&dsl_TerminateScript); // (script)                     <- stop a script (no arg = use running script).
 	// SCRIPTS - QUERY
-	lua_register(lua,"GetCurrentScript",&dsl_GetCurrentScript); // (script)             <- get the current script object.
+	lua_register(lua,"GetCurrentScript",&dsl_GetCurrentScript); // (script)                   <- get the current script object.
 	lua_register(lua,"GetScriptCollection",&dsl_GetScriptCollection); // (script)             <- get a script's collection name (no arg = use running script).
 	lua_register(lua,"GetScriptEnvironment",&dsl_GetScriptEnvironment); // (script)           <- get a script's environment (no arg = use running script).
 	lua_register(lua,"GetScriptName",&dsl_GetScriptName); // (script)                         <- get a script's name (no arg = use running script).
@@ -674,9 +715,14 @@ int dslopen_manager(lua_State *lua){
 	lua_register(lua,"GetThreadWait",&dsl_GetThreadWait); // ()                               <- help coroutines make use of Wait by returning the time that was used for Wait.
 	lua_register(lua,"Wait",&dsl_Wait); // (ms)                                               <- yield the current thread for some amount of time (or 0 for one tick).
 	// MANAGER - MISCELLANEOUS
-	lua_register(lua,"GetAllScriptInfo",&dsl_GetAllScriptInfo);
 	#ifndef DSL_SERVER_VERSION
 	lua_register(lua,"UseBaseGameScriptFunctions",&dsl_UseBaseGameScriptFunctions); // (bool) <- make the replaced game functions use the original versions for this thread update.
+	// DEBUG
+	if(dsl->flags & DSL_ADD_DEBUG_FUNCS){
+		lua_register(lua,"GetAllScriptInfo",&dsl_GetAllScriptInfo);
+		lua_register(lua,"GetScriptObject",&dsl_GetScriptObject);
+		lua_register(lua,"CompareScriptObjects",&dsl_CompareScriptObjects);
+	}
 	#endif
 	return 0;
 }

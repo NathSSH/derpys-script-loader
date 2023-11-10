@@ -61,7 +61,7 @@ static int g_threadcount; // mod initializes on creation of a certain thread if 
 static int g_waitforsave; // loaded save data through menu and must hold it until lua close
 static size_t *g_savedata; // extra save data at the end of save file to be given to dsl
 static void *g_data; // persistent data that needs to be kept between DSL states
-static void *g_dsl; // pointer returned by openDsl and passed to dsl functions
+static dsl_state *g_dsl; // pointer returned by openDsl and passed to dsl functions
 static void *g_controller; // pointer for controllers currently being updated
 static IDirect3DDevice9 *g_d3d9device; // saved when d3d9 is setup
 #ifdef DEBUG_THREADS
@@ -95,8 +95,9 @@ static HRESULT __stdcall setupDevice(void *arg,UINT adapter,D3DDEVTYPE type,HWND
 // GAME MAIN
 static void __cdecl startGame(void *arg){
 	assertSameThread();
-	generateContentHashes();
 	if(g_dsl = openDsl(NULL,NULL,NULL)){
+		if(getConfigBoolean(g_dsl->config,"allow_networking"))
+			generateContentHashes();
 		initDslContent(g_dsl);
 		g_waitforsave = 1;
 	}

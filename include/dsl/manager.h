@@ -38,6 +38,7 @@ typedef struct script_block{
 #define SHUTDOWN_SCRIPT 1
 #define INITIAL_SCRIPT_RUN 2
 #define DISABLE_SCRIPT_FLOW 4
+#define HASHED_SCRIPT 8
 
 // THREAD TYPES
 #define PRE_GAME_THREAD 0
@@ -74,6 +75,7 @@ const char* getThreadName(thread *t); // can be NULL
 
 // SCRIPT UTILITY
 #define getScriptName(script) ((const char*)((script)+1))
+void getScriptUserdata(lua_State *lua,script *s); // pushes userdata
 script* createScript(script_collection *c,int init,int envarg,struct dsl_file *file,const char *name,lua_State *lua,int *destroyedwhilerunning); // if there's an error, an error is on the lua stack (nil error if it skipped auto start)
 int importScript(script_manager *sm,struct dsl_file *file,const char *name,lua_State *lua); // if error, error is pushed on stack
 void destroyScript(script *s,lua_State *lua,int cleanup);
@@ -123,7 +125,9 @@ struct script{
 	// a null terminated string follows this struct with the script name
 	struct script_collection *collection;
 	struct thread *threads[TOTAL_THREAD_TYPES];
+	#ifndef DSL_SERVER_VERSION
 	char script_object[SCRIPT_BYTES];
+	#endif
 	int thread_count; // total count just for checking if the script is needed
 	int userdata; // lua object that holds the script
 	int hash;

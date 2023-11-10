@@ -7,12 +7,14 @@
 
 #include <dsl/dsl.h>
 #include <string.h>
+#include <ctype.h>
 #ifndef _WIN32
 #include <time.h>
 #include <signal.h>
-#include <pthread.h>
 #endif
 
+#define CONSOLE_HISTORY 16
+#define CONSOLE_BUFFER_SIZE 4096
 //#define W32_CUT_SLEEP 10 // if defined, Sleep time will be reduced by this time to account for the poor accuracy of Windows timing
 
 // DSL CONTROLLER
@@ -26,52 +28,145 @@ dsl_state *g_dsl = NULL;
 // INPUT (WINDOWS)
 #ifdef _WIN32
 struct console_input{
-	HANDLE thread;
+	HANDLE input;
 	char *buffer;
+	unsigned index;
+	char *history[CONSOLE_HISTORY];
+	int h_count;
+	int h_index;
 };
-static DWORD getInput(struct console_input *ci){
-	size_t index,count;
-	char *grow,c;
+static void addConsoleHistory(struct console_input *ci){
+	char *add;
+	int shift;
 	
-	// TODO: consider using WaitForSingleObject instead of threads?
-	
-	index = count = 0;
-	while((c = getchar()) != EOF && c != '\r' && c != '\n'){
-		if(++index >= count){
-			count = count ? count * 2 : 256;
-			grow = realloc(ci->buffer,count);
-			if(!grow){
-				if(ci->buffer)
-					free(ci->buffer);
-				ci->buffer = NULL;
-				return 0;
-			}
-			ci->buffer = grow;
-		}
-		ci->buffer[index-1] = c;
-	}
-	if(ci->buffer)
-		ci->buffer[index] = 0;
-	return 0;
+	add = malloc(ci->index+1);
+	if(!add)
+		return;
+	shift = ci->h_count;
+	if(shift == CONSOLE_HISTORY)
+		free(ci->history[--shift]); // get rid of oldest if we have the maximum amount
+	else
+		ci->h_count++;
+	for(;shift;shift--)
+		ci->history[shift] = ci->history[shift-1]; // shift everything up
+	*ci->history = memcpy(add,ci->buffer,ci->index+1); // add the newest
 }
-static int updateInput(struct console_input *ci){
-	DWORD status;
+static void startConsoleInput(struct console_input *ci,dsl_state *dsl){
+	if(getConfigBoolean(dsl->config,"console_no_input")){
+		ci->input = INVALID_HANDLE_VALUE;
+		return;
+	}
+	ci->input = GetStdHandle(STD_INPUT_HANDLE);
+	if(ci->input == INVALID_HANDLE_VALUE)
+		return;
+	FlushConsoleInputBuffer(ci->input);
+	ci->buffer = malloc(CONSOLE_BUFFER_SIZE);
+	if(!ci->buffer)
+		ci->input = INVALID_HANDLE_VALUE;
+	ci->index = 0;
+	ci->h_count = 0;
+}
+static void stopConsoleInput(struct console_input *ci){
+	if(ci->input == INVALID_HANDLE_VALUE)
+		return;
+	while(ci->h_count)
+		free(ci->history[--ci->index]);
+	free(ci->buffer);
+}
+static int updateConsoleInput(struct console_input *ci){
+	INPUT_RECORD ir;
+	DWORD read;
 	
-	if(!ci->thread)
-		ci->thread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)&getInput,ci,0,NULL);
-	if(!ci->thread || !GetExitCodeThread(ci->thread,&status) || status)
+	if(ci->input == INVALID_HANDLE_VALUE || WaitForSingleObject(ci->input,0))
 		return 0;
-	CloseHandle(ci->thread);
-	ci->thread = NULL;
-	return ci->buffer != NULL;
+	while(ReadConsoleInput(ci->input,&ir,1,&read) && read){
+		if(ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown){
+			if(ir.Event.KeyEvent.wVirtualKeyCode == VK_RETURN){
+				printf("\r> %.*s\n",ci->index,ci->buffer);
+				fflush(stdout);
+				ci->buffer[ci->index] = 0;
+				if(ci->index)
+					addConsoleHistory(ci);
+				ci->h_index = 0;
+				ci->index = 0;
+				return 1; // done!
+			}else if(ir.Event.KeyEvent.wVirtualKeyCode == VK_BACK){
+				printf("\r> %*s",ci->index,"");
+				if(ci->index)
+					ci->index--;
+				printf("\r> %.*s",ci->index,ci->buffer);
+			}else if(ir.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE){
+				printf("\r> %*s",ci->index,"");
+				ci->h_index = 0;
+				ci->index = 0;
+			}else if(ir.Event.KeyEvent.wVirtualKeyCode == VK_UP){
+				printf("\r> %*s",ci->index,"");
+				if(ci->h_index < ci->h_count){
+					strcpy(ci->buffer,ci->history[ci->h_index++]);
+					ci->index = strlen(ci->buffer);
+				}
+				printf("\r> %.*s",ci->index,ci->buffer);
+			}else if(ir.Event.KeyEvent.wVirtualKeyCode == VK_DOWN){
+				printf("\r> %*s",ci->index,"");
+				if(ci->h_index && --ci->h_index){
+					strcpy(ci->buffer,ci->history[ci->h_index-1]);
+					ci->index = strlen(ci->buffer);
+				}else
+					ci->index = 0;
+				printf("\r> %.*s",ci->index,ci->buffer);
+			}else if(isprint(ir.Event.KeyEvent.uChar.AsciiChar) && ci->index < CONSOLE_BUFFER_SIZE - 1){
+				ci->buffer[ci->index++] = ir.Event.KeyEvent.uChar.AsciiChar;
+				printf("\r> %.*s",ci->index,ci->buffer);
+			}
+			fflush(stdout);
+		}
+		if(WaitForSingleObject(ci->input,0))
+			return 0;
+	}
+	FlushConsoleInputBuffer(ci->input); // failed to read so just flush for next time
+	return 0;
 }
 #endif
 
 // INPUT (UNIX)
 #ifndef _WIN32
 struct console_input{
-	int unsupported_for_now;
+	char *buffer;
 };
+static void startConsoleInput(struct console_input *ci,dsl_state *dsl){
+	if(getConfigBoolean(dsl->config,"console_no_input")){
+		ci->buffer = NULL;
+		return;
+	}
+	ci->buffer = malloc(CONSOLE_BUFFER_SIZE);
+}
+static void stopConsoleInput(struct console_input *ci){
+	if(ci->buffer)
+		free(ci->buffer);
+}
+static int updateConsoleInput(struct console_input *ci){
+	struct timeval tv;
+	fd_set read;
+	char c;
+	int i;
+	
+	if(!ci->buffer)
+		return 0;
+	FD_ZERO(&read);
+	FD_SET(STDIN_FILENO,&read);
+	memset(&tv,0,sizeof(struct timeval));
+	if(select(STDIN_FILENO+1,&read,NULL,NULL,&tv) == -1 || !FD_ISSET(STDIN_FILENO,&read))
+		return 0;
+	i = 0;
+	while(fread(&c,1,1,stdin) == 1){
+		if(c == '\n'){
+			ci->buffer[i] = 0;
+			return 1;
+		}
+		ci->buffer[i++] = c;
+	}
+	return 0;
+}
 #endif
 
 // TERMINATE
@@ -187,6 +282,7 @@ int main(int argc,char **argv){
 	dsl = openDsl(NULL,NULL,NULL);
 	if(!dsl){
 		printf("\r "); // remove the >
+		fflush(stdout);
 		#ifdef DSL_SYSTEM_PAUSE
 		system(DSL_SYSTEM_PAUSE);
 		#endif
@@ -195,22 +291,22 @@ int main(int argc,char **argv){
 	g_dsl = dsl;
 	dsl->flags |= DSL_RUN_MAIN_LOOP;
 	setScriptCommandEx(dsl->cmdlist,"quit",TEXT_HELP_QUIT,&quitCommand,NULL,1);
-	memset(&ci,0,sizeof(struct console_input));
+	startConsoleInput(&ci,dsl);
 	startServerTimer(&st,dsl);
 	while(dsl->flags & DSL_RUN_MAIN_LOOP)
 		if(updateServerTimer(&st,dsl)){
-			#ifdef _WIN32
-			if(updateInput(&ci)){
+			if(updateConsoleInput(&ci)){
 				printf("> "); // just in case no console output replaces it
+				fflush(stdout);
 				if(*ci.buffer && !processScriptCommandLine(dsl->cmdlist,ci.buffer))
 					printConsoleError(dsl->console,"command does not exist");
 			}
-			#endif
 			updateNetworking(dsl,dsl->network);
 			updateDslAfterScripts(dsl);
 			updateNetworking2(dsl,dsl->network);
 		}
 	closeDsl(dsl);
-	printf("shutdown server\n");
+	stopConsoleInput(&ci);
+	printf("server shutdown\n");
 	return 0;
 }

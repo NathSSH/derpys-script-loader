@@ -179,6 +179,7 @@ extern dsl_state *g_dsl; // getGameTimer needs this
 #include "command.h"
 #include "manager.h"
 #include "loader.h"
+#include "content.h"
 #include "network.h"
 #ifdef DSL_SERVER_VERSION
 #include "server/sv_game.h"
@@ -186,7 +187,6 @@ extern dsl_state *g_dsl; // getGameTimer needs this
 #else
 #include "client/game.h"
 #include "client/render.h"
-#include "client/content.h"
 #include "client/console.h"
 #endif
 

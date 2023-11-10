@@ -2,7 +2,6 @@
 
 #include <dsl/dsl.h>
 
-
 static int RebuildArchives(lua_State *lua){
 	dsl_state *dsl;
 	
@@ -64,9 +63,13 @@ static int GetContentHash(lua_State *lua){
 	return 1;
 }
 int dslopen_content(lua_State *lua){
-	if(getDslState(lua,1)->flags & DSL_ADD_REBUILD_FUNC)
+	dsl_state *dsl;
+	
+	dsl = getDslState(lua,1);
+	if(dsl->flags & DSL_ADD_REBUILD_FUNC)
 		lua_register(lua,"RebuildArchives",&RebuildArchives);
+	if(dsl->flags & DSL_ADD_DEBUG_FUNCS)
+		lua_register(lua,"GetContentHash",&GetContentHash);
 	lua_register(lua,"RegisterGameFile",&RegisterGameFile); // void (string archive, string file)
-	lua_register(lua,"GetContentHash",&GetContentHash);
 	return 0;
 }

@@ -38,6 +38,8 @@
 #define FLAG_PLAYING 256 // is fully connected and playing (can still be considered playing even if they need more files)
 #define FLAG_SENDHEART 512 // should send heartbeat messages
 #define FLAG_KICKTIMER 1024 // don't close the socket immediately but wait for the timeout
+#define FLAG_DELAYKICK 2048 // only turn on FLAG_SHOULDKICK instead of kicking
+#define FLAG_SHOULDKICK 4096
 
 // DISCONNECT REASONS
 #define REASON_NONE 0
@@ -81,7 +83,7 @@ static int checkStringChars(const char *str){
 	char c;
 	
 	for(;c = *str;str++)
-		if(!isprint(c) && !isspace(c))
+		if(!isprint(c))
 			return c;
 	return 0; // zero = safe
 }
@@ -158,6 +160,12 @@ static void kickPlayer(dsl_state *dsl,network_player *player,const char *reason,
 	net_msg_size bytes;
 	unsigned char msg;
 	
+	if(player->flags & FLAG_DELAYKICK){ // turned on during PlayerConnecting and PlayerConnected events
+		strncpy(player->shouldkick,reason,NET_CLIENT_KICK_BYTES);
+		player->shouldkick[NET_CLIENT_KICK_BYTES-1] = 0;
+		player->flags |= FLAG_SHOULDKICK;
+		return;
+	}
 	bytes = sizeof(net_msg_size) + 1 + strlen(reason);
 	sendBytes(player,&bytes,sizeof(net_msg_size));
 	msg = NET_SVM_FUCK_YOU;
@@ -690,16 +698,41 @@ static int msgListing(dsl_state *dsl,network_player *player,net_msg_size bytes,c
 	return 0;
 }
 static int msgConnect(dsl_state *dsl,network_player *player,net_msg_size bytes,char *message){
+	static const char *fields[CONTENT_TYPES] = {"act","cuts","trigger","ide","scripts","world"};
 	network_state *net;
 	lua_State *lua;
+	int *hashes;
+	int count;
+	int index;
 	
 	printConsoleOutput(dsl->console,"{%s} connecting to the server",getPlayerName(player));
 	lua = dsl->lua;
 	net = dsl->network;
 	player->flags |= FLAG_CONNECTED; // connected means they will start initialization, but are considered "connecting" to scripts
+	hashes = (int*)(message + sizeof(uint32_t) + sizeof(NET_SIGNATURE));
+	bytes -= sizeof(uint32_t) + sizeof(NET_SIGNATURE);
+	if(*(unsigned*)hashes % sizeof(int) || (count = *(unsigned*)hashes / sizeof(int)) < CONTENT_TYPES + 1){ // +1 since the count includes itself
+		sprintf(dsl->network->error,"corrupted hashes (%d)",count);
+		return 1;
+	}
 	lua_pushnumber(lua,getPlayerId(net,player));
-	runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"PlayerConnecting",1);
-	lua_pop(lua,1);
+	lua_newtable(lua);
+	for(index = CONTENT_TYPES + 1;index < count;index++){
+		lua_pushlightuserdata(lua,(void*)hashes[index]);
+		lua_rawseti(lua,-2,index-CONTENT_TYPES);
+	}
+	index = 0;
+	while(index < CONTENT_TYPES){
+		lua_pushstring(lua,fields[index++]);
+		lua_pushlightuserdata(lua,(void*)hashes[index]);
+		lua_rawset(lua,-3);
+	}
+	player->flags |= FLAG_DELAYKICK;
+	runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"PlayerConnecting",2);
+	player->flags &= ~FLAG_DELAYKICK;
+	if(player->flags & FLAG_SHOULDKICK)
+		kickPlayer(dsl,player,player->shouldkick,lua);
+	lua_pop(lua,2);
 	if(~player->flags & FLAG_KICKED)
 		player->flags |= FLAG_NEEDFILES;
 	return 0;
@@ -718,15 +751,22 @@ static int msgAlright(dsl_state *dsl,network_player *player,net_msg_size bytes,c
 	return 0;
 }
 static int msgImready(dsl_state *dsl,network_player *player,net_msg_size bytes,char *message){
+	lua_State *lua;
+	
 	if(player->flags & FLAG_PLAYING){
 		strcpy(dsl->network->error,"unexpected ready message");
 		return 1;
 	}
 	printConsoleOutput(dsl->console,"{%s} connected to the server",getPlayerName(player));
+	lua = dsl->lua;
 	player->flags |= FLAG_PLAYING | FLAG_SENDHEART; // playing means they have finished initialization, but are considered "connected" to scripts
-	lua_pushnumber(dsl->lua,getPlayerId(dsl->network,player));
-	runLuaScriptEvent(dsl->events,dsl->lua,LOCAL_EVENT,"PlayerConnected",1);
-	lua_pop(dsl->lua,1);
+	lua_pushnumber(lua,getPlayerId(dsl->network,player));
+	player->flags |= FLAG_DELAYKICK;
+	runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"PlayerConnected",1);
+	player->flags &= ~FLAG_DELAYKICK;
+	if(player->flags & FLAG_SHOULDKICK)
+		kickPlayer(dsl,player,player->shouldkick,lua);
+	lua_pop(lua,1);
 	return 0;
 }
 static int msgSevents(dsl_state *dsl,network_player *player,net_msg_size bytes,char *message){
@@ -823,19 +863,31 @@ static int msgSevents2(dsl_state *dsl,network_player *player,net_msg_size bytes,
 	return 0;
 }
 static int initialRequest(network_player *player,net_msg_size bytes,char *message){
-	// dsl version, net sig, username
-	if(bytes < sizeof(uint32_t) + sizeof(NET_SIGNATURE))
+	// dsl version, net sig, hashes, username
+	if(bytes < sizeof(uint32_t) + sizeof(NET_SIGNATURE) + sizeof(unsigned))
 		return 1;
 	if(*(uint32_t*)message != DSL_VERSION)
 		return 1;
 	message += sizeof(uint32_t);
 	if(strcmp(message,NET_SIGNATURE))
 		return 1;
+	message += sizeof(NET_SIGNATURE);
 	bytes -= sizeof(uint32_t) + sizeof(NET_SIGNATURE);
+	if(bytes < *(unsigned*)message)
+		return 1;
+	bytes -= *(unsigned*)message;
+	message += *(unsigned*)message;
 	if(bytes >= NET_MAX_USERNAME_BYTES)
 		bytes = NET_MAX_USERNAME_BYTES - 1;
-	if(bytes)
-		strncpy(player->name,message+sizeof(NET_SIGNATURE),bytes); // we know it's null terminated because the entire player was zero'd
+	while(bytes && isspace(*message)){
+		message++; // skipping whitespace at start
+		bytes--;
+	}
+	if(bytes){
+		message = strncpy(player->name,message,bytes); // we know it's null terminated because the entire player was zero'd
+		while(isspace(message[--bytes]))
+			message[bytes] = 0; // trimming whitespace at end
+	}
 	if(checkStringChars(player->name))
 		return 2;
 	return 0;

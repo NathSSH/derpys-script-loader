@@ -23,14 +23,27 @@ struct chunk_loader{
 };
 
 // Miscellaneous.
-static int dsl_GetScriptString(lua_State *lua){ // lazily copied from manager lib because fuck it it's fine
+static int getScriptString(lua_State *lua){
 	script *s;
 	
 	if(s = *(script**)lua_touserdata(lua,1))
-		lua_pushfstring(lua,"script: %s",getScriptName(s));
+		lua_pushfstring(lua,"script: %s",(char*)(s+1));
 	else
 		lua_pushstring(lua,"invalid script");
 	return 1;
+}
+void getScriptUserdata(lua_State *lua,script *s){
+	if(s->userdata == LUA_NOREF){
+		*(script**)lua_newuserdata(lua,sizeof(script*)) = s;
+		lua_newtable(lua);
+		lua_pushstring(lua,"__tostring");
+		lua_pushcfunction(lua,&getScriptString);
+		lua_rawset(lua,-3);
+		lua_setmetatable(lua,-2);
+		lua_pushvalue(lua,-1);
+		s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
+	}else
+		lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
 }
 
 // Reader.
@@ -71,7 +84,7 @@ static const char* loadScriptReader(lua_State *lua,struct chunk_loader *loader,s
 	}
 	return NULL;
 }
-static int loadScript(lua_State *lua,dsl_file *file,const char *name,dsl_state *dsl,int *hash){ // zero = success
+static int loadScript(lua_State *lua,dsl_file *file,const char *name,dsl_state *dsl,script *s){ // zero = success
 	struct chunk_loader *loader;
 	int status;
 	
@@ -88,8 +101,10 @@ static int loadScript(lua_State *lua,dsl_file *file,const char *name,dsl_state *
 	*(char*)(loader+1) = '@';
 	strcpy((char*)(loader+1)+1,name);
 	status = lua_load(lua,&loadScriptReader,loader,(char*)(loader+1));
-	if(hash)
-		*hash = loader->hash;
+	if(s){
+		s->flags |= HASHED_SCRIPT;
+		s->hash = loader->hash;
+	}
 	if(!loader->warn && loader->bin != 1)
 		printConsoleWarning(dsl->console,"%sdetected macintosh style linebreaks in \"%s\" which will break line number detection, consider fixing this using EOL conversion in notepad++",getDslPrintPrefix(dsl,0),name);
 	free(loader);
@@ -325,7 +340,7 @@ script* createScript(script_collection *c,int init,int envarg,dsl_file *file,con
 	startScriptBlock(sm,s,&sb);
 	if(!file)
 		lua_insert(lua,-2); // put virtual script environment before the function
-	if((file && loadScript(lua,file,name,sm->dsl,&s->hash)) || runScript(s,init,lua)){
+	if((file && loadScript(lua,file,name,sm->dsl,s)) || runScript(s,init,lua)){
 		lua_replace(lua,-2);
 		shutdownScript(s,lua,0);
 		finishScriptBlock(sm,&sb,lua);
@@ -386,16 +401,14 @@ void destroyScript(script *s,lua_State *lua,int cleanup){
 			cleanupGameScript(s->script_object);
 		#endif
 		runScriptEvent(dsl->events,lua,EVENT_SCRIPT_CLEANUP,s);
-		if(s->userdata != LUA_NOREF){
-			lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
-			if(sptr = lua_touserdata(lua,-1))
-				*sptr = NULL; // now this userdata points to an invalid script
-			startScriptBlock(sm,s,&sb); // this is just to make sure the script isn't fully destroyed during the event
-			runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptDestroyed",1);
-			finishScriptBlock(sm,&sb,lua);
-			lua_pop(lua,1);
-			luaL_unref(lua,LUA_REGISTRYINDEX,s->userdata);
-		}
+		getScriptUserdata(lua,s);
+		if(sptr = lua_touserdata(lua,-1))
+			*sptr = NULL; // now this userdata points to an invalid script
+		luaL_unref(lua,LUA_REGISTRYINDEX,s->userdata);
+		startScriptBlock(sm,s,&sb); // this is just to make sure the script isn't fully destroyed during the event
+		runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptDestroyed",1);
+		finishScriptBlock(sm,&sb,lua);
+		lua_pop(lua,1);
 		lua_pushlightuserdata(lua,s);
 		lua_pushnil(lua);
 		lua_rawset(lua,LUA_REGISTRYINDEX); // registry[s*] = nil
@@ -415,19 +428,11 @@ int shutdownScript(script *s,lua_State *lua,int cleanup){
 	if(~s->flags & SHUTDOWN_SCRIPT){
 		sm = s->collection->manager;
 		dsl = sm->dsl;
-		if(s->userdata == LUA_NOREF){
-			*(script**)lua_newuserdata(lua,sizeof(script*)) = s;
-			lua_newtable(lua);
-			lua_pushstring(lua,"__tostring");
-			lua_pushcfunction(lua,&dsl_GetScriptString);
-			lua_rawset(lua,-3);
-			lua_setmetatable(lua,-2);
-			lua_pushvalue(lua,-1);
-			s->userdata = luaL_ref(lua,LUA_REGISTRYINDEX);
-		}else
-			lua_rawgeti(lua,LUA_REGISTRYINDEX,s->userdata);
+		getScriptUserdata(lua,s);
 		startScriptBlock(sm,s,&sb); // this is just to make sure the script isn't fully destroyed during the event
+		s->flags |= SHUTDOWN_SCRIPT; // so it can't recursively shut itself down
 		runLuaScriptEvent(dsl->events,lua,LOCAL_EVENT,"ScriptShutdown",1);
+		s->flags &= ~SHUTDOWN_SCRIPT;
 		finishScriptBlock(sm,&sb,lua);
 		lua_pop(lua,1);
 		for(keep = 0;keep < TOTAL_THREAD_TYPES;keep++)
@@ -435,9 +440,9 @@ int shutdownScript(script *s,lua_State *lua,int cleanup){
 				next = shutdown->next;
 				shutdownThread(shutdown,lua,0);
 			}
-		runScriptEvent(dsl->events,lua,EVENT_SCRIPT_CLEANUP,s);
 		if(cleanup)
 			activateThread(s,lua,GAME_THREAD,CLEANUP_THREAD,"MissionCleanup");
+		runScriptEvent(dsl->events,lua,EVENT_SCRIPT_CLEANUP,s);
 	}
 	if(keep = s->running || s->thread_count)
 		s->flags |= SHUTDOWN_SCRIPT;

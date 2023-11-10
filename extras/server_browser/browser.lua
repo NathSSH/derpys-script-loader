@@ -189,6 +189,9 @@ function T_Controls()
 			if gIndex > table.getn(gBrowser) then
 				gIndex = 1
 			end
+		elseif IsKeyBeingPressed("LEFT") then
+			SoundPlay2D("ButtonDown")
+			return
 		elseif (IsKeyBeingPressed("RIGHT") or IsKeyBeingPressed("RETURN")) and gBrowser[gIndex] and ConnectToServer(gBrowser[gIndex].addr) then
 			SoundPlay2D("ButtonDown")
 			return
@@ -343,13 +346,14 @@ RegisterLocalEventHandler("ServerListing",function(address,listing)
 end)
 RegisterLocalEventHandler("ServerConnecting",function(address)
 	gAddress = address
+	gKicked = nil
 end)
 RegisterLocalEventHandler("ServerConnected",function()
 	gConnected = true
 	gDownloading = false
 end)
 RegisterLocalEventHandler("ServerDisconnected",function()
-	if gAddress then
+	if gAddress and not gKicked then
 		gKicked = {reason = "disconnected from server",started = GetTimer(),red = false}
 	end
 	gAddress = nil

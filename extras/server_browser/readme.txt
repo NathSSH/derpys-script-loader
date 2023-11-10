@@ -2,7 +2,7 @@ SERVER BROWSER - derpy54320
 
 install:
  1. install derpy's script loader 7.1 or better
- 2. put server_browser.zip into _derpy_script_loader/scripts (the whole zip file, not extracted)
+ 2. put server_browser into _derpy_script_loader/scripts
 
 usage:
  press F1 to open the server browser if not connected to a server

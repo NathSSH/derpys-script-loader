@@ -869,8 +869,8 @@ static int startCollection(script_loader *sl,loader_collection *lc,int initial,i
 	}
 	dsl = sl->dsl;
 	#ifndef DSL_SERVER_VERSION
-	if(netcheck && dsl->network && isNetworkPlayingOnServer(dsl->network) && ~lc->flags & LOADER_ALLOWSERVER){
-		printConsoleError(dsl->console,"[%s] you cannot start this script collection on a server",(char*)(lc+1));
+	if(netcheck && dsl->network && isNetworkPlayingOnServer(dsl->network)){
+		printConsoleError(dsl->console,"[%s] you cannot start this script collection while on a server",(char*)(lc+1));
 		return 0;
 	}
 	#endif
@@ -921,8 +921,10 @@ static int startCollection(script_loader *sl,loader_collection *lc,int initial,i
 	}
 	if(f){
 		if(!startCollectionMainScript(dsl,lc,f,fname,initial)){
-			lc->flags |= LOADER_STOPPING;
-			shutdownScriptCollection(lc->sc,dsl->lua,1);
+			if(lc->sc){ // sc could be NULL now if the script killed its own collection
+				lc->flags |= LOADER_STOPPING;
+				shutdownScriptCollection(lc->sc,dsl->lua,1);
+			}
 			if(f)
 				closeDslFile(f);
 			return 0;
@@ -931,8 +933,10 @@ static int startCollection(script_loader *sl,loader_collection *lc,int initial,i
 	}
 	for(array = 1;f = openCollectionMainScript(dsl,lc,fname,sizeof(fname),array);array++){ // opening will mark as not failed if there's no more scripts
 		if(!startCollectionMainScript(dsl,lc,f,fname,initial)){
-			lc->flags |= LOADER_STOPPING;
-			shutdownScriptCollection(lc->sc,dsl->lua,1);
+			if(lc->sc){
+				lc->flags |= LOADER_STOPPING;
+				shutdownScriptCollection(lc->sc,dsl->lua,1);
+			}
 			closeDslFile(f);
 			return 0; // may or may not be a failure (might be a version requirement or a dont-auto-start), but a collection can only start if all main scripts can start
 		}
@@ -965,14 +969,14 @@ static void stopCollection(script_loader *sl,loader_collection *lc){ // only cal
 }
 
 // COMMAND UTILITY
-static int canCommandCollection(script_loader *sl,loader_collection *lc){
+static int canCommandCollection(script_loader *sl,loader_collection *lc,int starting){
 	#ifndef DSL_SERVER_VERSION
 	dsl_state *dsl;
 	
 	dsl = sl->dsl;
-	if(lc->flags & LOADER_NETWORK)
-		return 0;
-	if(dsl->network && isNetworkPlayingOnServer(dsl->network) && ~lc->flags & LOADER_ALLOWSERVER)
+	if(!dsl->network || !isNetworkPlayingOnServer(dsl->network))
+		return 1;
+	if(starting || lc->flags & LOADER_NETWORK)
 		return 0;
 	#endif
 	return 1;
@@ -1011,13 +1015,21 @@ static void printCollectionCheck(loader_collection *lc,script_console *console){
 // COMMAND FUNCTIONS
 static void startCommand(script_loader *sl,int argc,char **argv){
 	loader_collection *lc;
+	dsl_state *dsl;
 	
 	refreshCollections(sl);
 	if(argc && **argv == '*'){
-		printConsoleOutput(sl->dsl->console,"starting / restaring all script collections");
+		dsl = sl->dsl;
+		#ifndef DSL_SERVER_VERSION
+		if(dsl->network && isNetworkPlayingOnServer(dsl->network)){
+			printConsoleError(dsl->console,"cannot start all collections while on a server");
+			return;
+		}
+		#endif
+		printConsoleOutput(dsl->console,"starting / restaring all script collections");
 		for(lc = sl->first;lc;lc = lc->next)
 			if(lc->sc){
-				if(canCommandCollection(sl,lc)){
+				if(canCommandCollection(sl,lc,1)){
 					lc->flags |= LOADER_RESTARTING;
 					if(~lc->flags & LOADER_STOPPING)
 						stopCollection(sl,lc);
@@ -1030,7 +1042,7 @@ static void startCommand(script_loader *sl,int argc,char **argv){
 		else if(!lc->sc){
 			printConsoleOutput(sl->dsl->console,"starting %s",(char*)(lc+1));
 			startCollection(sl,lc,0,1);
-		}else if(canCommandCollection(sl,lc)){
+		}else if(canCommandCollection(sl,lc,1)){
 			printConsoleOutput(sl->dsl->console,"restarting %s",(char*)(lc+1));
 			lc->flags |= LOADER_RESTARTING;
 			if(~lc->flags & LOADER_STOPPING)
@@ -1041,18 +1053,25 @@ static void startCommand(script_loader *sl,int argc,char **argv){
 }
 static void stopCommand(script_loader *sl,int argc,char **argv){
 	loader_collection *lc;
+	dsl_state *dsl;
 	
 	refreshCollections(sl);
 	if(argc && **argv == '*'){
-		printConsoleOutput(sl->dsl->console,"stopping all script collections");
+		dsl = sl->dsl;
+		#ifndef DSL_SERVER_VERSION
+		if(dsl->network && isNetworkPlayingOnServer(dsl->network))
+			printConsoleOutput(dsl->console,"stopping all local script collections");
+		else
+		#endif
+			printConsoleOutput(dsl->console,"stopping all script collections");
 		for(lc = sl->first;lc;lc = lc->next)
-			if(lc->sc && canCommandCollection(sl,lc)){
+			if(lc->sc && canCommandCollection(sl,lc,0)){
 				lc->flags &= ~LOADER_RESTARTING;
 				if(~lc->flags & LOADER_STOPPING)
 					stopCollection(sl,lc);
 			}
 	}else if(lc = getCollectionFromArgv(sl,argc,argv,LOADER_LOCAL)){
-		if(!canCommandCollection(sl,lc)){
+		if(!canCommandCollection(sl,lc,0)){
 			printConsoleError(sl->dsl->console,"[%s] you cannot stop this script collection while on a server",(char*)(lc+1));
 		}else if(lc->sc){
 			printConsoleOutput(sl->dsl->console,"stopping %s",(char*)(lc+1));
@@ -1065,12 +1084,20 @@ static void stopCommand(script_loader *sl,int argc,char **argv){
 }
 static void restartCommand(script_loader *sl,int argc,char **argv){
 	loader_collection *lc;
+	dsl_state *dsl;
 	
 	refreshCollections(sl);
 	if(argc && **argv == '*'){
-		printConsoleOutput(sl->dsl->console,"restaring running script collections");
+		dsl = sl->dsl;
+		#ifndef DSL_SERVER_VERSION
+		if(dsl->network && isNetworkPlayingOnServer(dsl->network)){
+			printConsoleError(dsl->console,"cannot restart all collections while on a server");
+			return;
+		}
+		#endif
+		printConsoleOutput(dsl->console,"restaring running script collections");
 		for(lc = sl->first;lc;lc = lc->next)
-			if(lc->sc && ~lc->flags & LOADER_STOPPING && ~lc->flags & LOADER_SCRIPTLESS && canCommandCollection(sl,lc)){
+			if(lc->sc && ~lc->flags & LOADER_STOPPING && ~lc->flags & LOADER_SCRIPTLESS && canCommandCollection(sl,lc,1)){
 				lc->flags |= LOADER_RESTARTING;
 				stopCollection(sl,lc);
 			}
@@ -1080,7 +1107,7 @@ static void restartCommand(script_loader *sl,int argc,char **argv){
 		else if(!lc->sc){
 			printConsoleOutput(sl->dsl->console,"starting %s",(char*)(lc+1));
 			startCollection(sl,lc,0,1);
-		}else if(canCommandCollection(sl,lc)){
+		}else if(canCommandCollection(sl,lc,1)){
 			printConsoleOutput(sl->dsl->console,"restarting %s",(char*)(lc+1));
 			lc->flags |= LOADER_RESTARTING;
 			if(~lc->flags & LOADER_STOPPING)

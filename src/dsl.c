@@ -77,6 +77,7 @@ force_auto_start_pref false    # ignore auto_start overrides set by script colle
 [CONSOLE_PREFERENCES]\r\n\
 console_logging true      # log console messages to a file\r\n\
 console_warnings false    # show warnings about server performance\r\n\
+console_no_input false    # disable console input\r\n\
 \r\n\
 [BLACKLIST_AND_WHITELIST]\r\n\
 whitelist_instead false    # only allow whitelisted ips instead of stopping blacklisted ones\r\n\
@@ -311,6 +312,7 @@ static int initConsole(dsl_state *state){
 	if(getConfigBoolean(state->config,"console_warnings"))
 		state->flags |= DSL_SHOW_TICK_WARNINGS;
 	printf("\r \n> "); // extra line after signature
+	fflush(stdout);
 	#endif
 	#endif
 	return 0;

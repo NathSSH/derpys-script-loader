@@ -18,6 +18,8 @@ struct dsl_state;
 #define CONTENT_WORLD_IMG 5
 #define CONTENT_TYPES 6
 
+#ifndef DSL_SERVER_VERSION
+
 typedef struct script_content script_content;
 
 #ifdef __cplusplus
@@ -38,6 +40,8 @@ int getContentHash(int type);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif
