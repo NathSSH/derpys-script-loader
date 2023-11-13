@@ -44,7 +44,7 @@
 #define DSL_SYSTEM_PAUSE "PAUSE" // *
 #else
 #define DSL_SYSTEM_CLS "clear" // *
-#define DSL_SYSTEM_PAUSE "read -p \"Press any key to continue . . . \"" // *
+//#define DSL_SYSTEM_PAUSE "read -p \"Press any key to continue . . . \"" // *
 #endif
 
 // ROOT PATH
