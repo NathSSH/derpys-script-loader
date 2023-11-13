@@ -8,9 +8,9 @@ install:
  if you have issues updating you may need to delete "_derpy_script_loader/scripts/loadact.lua" as it has been deprecated
 
 scripts:
- put scripts into "_derpy_script_loader/scripts" by following the instructions in whatever mod you are trying to install
- see the included "install.png" for help as some mods are single files and some are entire folders
- "loadanim.lua" is the only built-in script so that other scripts can rely on it being there
+ put scripts into "_derpy_script_loader/scripts" by following the instructions for whatever mod you are installing
+ see the included "install.png" for help as some mods are single files and some are entire folders or even zips
+ "loadanim.lua" is built-in so other mods can rely on it, and server_browser so you can get started quickly
 
 -- information --
 
@@ -23,12 +23,12 @@ config:
  open up _derpy_script_loader/config.txt after it generates to see extra loader options
 
 console:
- press ~ (or ` in some regions) to toggle the console (unless changed in config)
+ press ~ (or ` in some regions) to toggle the console
  use /help for a list of commands
 
 networking:
  there are networking features that are disabled by default (enable it in the config)
- use /connect to connect to a server *or* install the server browser
+ use /connect to connect to a server *or* hit F1 to use the server browser
 
 -- miscellaneous --
 
@@ -39,12 +39,6 @@ resources:
 packages:
  scripts can make use of custom "packages" in "_derpy_script_loader/packages" (non-existent by default) using the "require" function
  if you want to develop one that loads a DLL using the "loadlib" function, see "extras/sdk/dslpackage.h"
-
-extras:
- the "extras" folder contains the package sdk and a few optional scripts you can move to the "scripts" folder if desired
- "dev" lets you run Lua code directly from the console (which is not a normal feature as it can be "cheating" in some contexts)
- "window" puts the game into borderless fullscreen, lets you toggle a window with alt+enter, and close the game by hitting alt+f4
- "server_browser" lets you hit F1 to list and connect to servers in your DSL config (if networking is enabled)
 
 credits:
  derpy54320 - developer

@@ -17,10 +17,10 @@
 				margin-right: auto;
 				max-width: 60rem;
 				padding: 1rem;
-				padding-top: 1px;
+				padding-top: 0;
 			}
 			.section{
-				margin-left: 16px;
+				margin-left: 1rem;
 			}
 			a.function{
 				color: inherit;
@@ -29,14 +29,18 @@
 			a.function:hover{
 				text-decoration: underline;
 			}
-			h1,h2{
+			h1,h2,h3{
 				color: #C8C878;
 				font-family: Arial;
 				font-weight: 900;
 			}
+			hr{
+				margin-bottom: 0;
+				margin-top: 2rem;
+			}
 			p{
-				margin-top: 0px;
-				margin-bottom: 8px;
+				margin-bottom: 0.5rem;
+				margin-top: 0;
 			}
 			span{
 				background-color: #C0C0C0;
@@ -55,11 +59,94 @@
 	<body>
 		<div id="container">
 			<h1>derpy's script loader 9</h1>
+			<p class="section">
+				Visit the full documentation for derpy's script loader (DSL) on <a href="http://bullyscripting.net">bullyscripting.net</a>.
+				This light documentation lists most functions, explains what is included with this release, and covers some of the basics you'll need to get started.
+			</p>
+			<hr/>
+			<h2>_derpy_script_loader/scripts</h2>
 			<div class="section">
-				<p>This is a light version of the full documentation available on <a href="http://bullyscripting.net">bullyscripting.net</a>.</p>
-				<p>It only lists Lua functions created by DSL and provides links to their full documentation pages.</p>
-				<p>Functions that are from Lua's standard library, replace Lua's standard library, or are DSL dev functions are not included here.</p>
+				<p>
+					This is the most important folder, since it is where all your <b>script collections</b> go.
+					You can think of these collections as individual&nbsp;mods, but really they are just a way of grouping related scripts together.
+					There are 3 main types of collections.
+				</p>
+				<ul>
+					<li><b>NORMAL</b>: a folder is the most common type of script collection.</li>
+					<li><b>ZIPPED</b>: a zip file structured like a normal collection. The root of the zip is just treated like a folder.</li>
+					<li><b>STANDALONE</b>: single scripts (not in a folder) are still counted as collections, just containing themselves.</li>
+				</ul>
+				<p>
+					It is really important when installing mods that you do <i>not</i> put files from a non-standalone collection directly into <i>scripts</i>.
+					If you do, then each individual script will be treated like its own collection and start automatically (which may not be the author's intention).
+				</p>
+				<p>
+					The only script included by default is <b>loadanim.lua</b>, so that other scripts don't need to worry about it.
+				</p>
 			</div>
+			<hr/>
+			<h2>_derpy_script_loader/extras</h2>
+			<div class="section">
+				<p>
+					This folder contains a few optional parts of DSL.
+					If you want to use any of the scripts here, move them to your <i>scripts</i> folder
+					(just remember to move the whole folder and not just its files).
+				</p>
+				<ul>
+					<li><b>dev</b>: scripts for helping developers. See the comments in each script for more help.</li>
+					<li><b>sdk</b>: files for extending DSL using <i>packages</i>. Not of interest to 99% of people.</li>
+					<li><b>window</b>: scripts to run the game in windowed mode. See the config file for more settings.</li>
+				</ul>
+			</div>
+			<hr/>
+			<h2>_derpy_script_loader/examples</h2>
+			<div class="section">
+				<p>
+					This folder has example scripts to help you get started or learn more.
+					All of them require you to know the basics of Lua 5.0.2.
+					If you don't know Lua, consider reading chapter 1 of <a href="https://www.lua.org/pil/contents.html">Programming in Lua</a>
+					while you look at some of the starter examples.
+				</p>
+				<p>
+					There are 4 "difficulty levels" of example. Start wherever you think is appropriate for you and move up.
+					All of them have their own readme.txt file that summarizes the example and offers some challenges for you.
+				</p>
+				<h3>STARTER</h3>
+				<p>
+					Start learning how to structure script collections, make scripts, and use the console.
+				</p>
+				<ul>
+					<li><b>hello_world</b>: show "Hello, world!" on the screen.</li>
+					<li><b>give_cash</b>: give the player money when using /give_cash in the console.</li>
+				</ul>
+				<h3>BEGINNER</h3>
+				<p>
+					See how you can do a bit more while still having lots of comments to guide you.
+				</p>
+				<ul>
+					<li><b>free_stuff</b>: make all items in shops free.</li>
+					<li><b>trash_loot</b>: loot any trash can for random stuff once a day.</li>
+					<li><b>spawn_bodyguard</b>: spawn a bodyguard using /bodyguard in the console.</li>
+				</ul>
+				<h3>INTERMEDIATE</h3>
+				<p>
+					Start looking at more complex examples since you already know the basics.
+				</p>
+				<ul>
+					<li><b>custom_healthbar</b>: draw a custom healthbar using a texture.</li>
+					<li><b>riot_mode</b>: make all peds fight each other and spawn more peds.</li>
+				</ul>
+				<h3>EXPERT</h3>
+				<p>
+					Make use of more DSL features to make your scripts even better.
+				</p>
+				<ul>
+					<li><b>algie_survival</b>: survive against waves of Algernon.</li>
+					<li><b>mod_menu</b>: a menu that lets you control a bunch of things.</li>
+					<li><b>super_nerds</b>: all the nerds are a lot stronger, super even.</li>
+				</ul>
+			</div>
+			<hr/>
 			<div class="functions">
 				<h2>client</h2>
 				<div class="section">
@@ -239,6 +326,8 @@
 					<p><span>DSL5</span> <a>QuitGame</a></p>
 					<p><span>DSL8</span> <a>ObjectNameToHashID</a></p>
 					<p><span>DSL8</span> <a>QuitServer</a></p>
+					<p><span>DSL9</span> <a>GetHash</a></p>
+					<p><span>DSL9</span> <a>IsHash</a></p>
 				</div>
 			</div>
 			<div class="functions">

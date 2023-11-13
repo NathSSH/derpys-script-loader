@@ -1,7 +1,3 @@
--- DERPY'S SCRIPT LOADER: ADVANCED TEXTURE EXAMPLE
---  this is a bit more complex of an example of drawing textures
---  it gives you a heart shaped health bar that shows up when health changes
-
 HUD_R0, HUD_G0, HUD_B0 = 0, 0, 0 -- 0% health
 HUD_R1, HUD_G1, HUD_B1 = 230, 37, 37 -- 100% health
 HUD_R2, HUD_G2, HUD_B2 = 230, 37, 170 -- 200% health
