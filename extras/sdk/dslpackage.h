@@ -16,8 +16,8 @@
 		the returned function can now be called to actually run your DLL
 	
 	using packages:
-		 a script can call "require" with "package" to load "package.lua" from the "packages" folder
-		 this is how scripts should require the use of your custom package
+		a script can call "require" with "package" to load "package.lua" from the "packages" folder
+		this is how scripts should require the use of your custom package
 	
 */
 
