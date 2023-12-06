@@ -1279,6 +1279,8 @@ void prepareScriptLoaderForServer(script_loader *sl){
 	loader_collection *lc;
 	int none;
 	
+	// TODO: probably remove ~lc->flags & LOADER_NETWORK because old net scripts SHOULD still turn on LOADER_NETBLOCKER.
+	
 	none = 1;
 	for(lc = sl->first;lc;lc = lc->next)
 		if(lc->sc && ~lc->flags & LOADER_NETWORK && ~lc->flags & LOADER_ALLOWSERVER){
