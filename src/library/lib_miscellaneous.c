@@ -154,6 +154,8 @@ static int callFunctionFromDslScript(lua_State *lua,dsl_state *dsl,script *s){
 	int stack;
 	int stackb4;
 	
+	// TODO: check this for errors because i guess we got failed to pass arguments during play testing?
+	
 	if(!s || s->flags & SHUTDOWN_SCRIPT)
 		luaL_argerror(lua,1,"invalid script");
 	object = s->script_object;
